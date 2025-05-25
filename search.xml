@@ -273,8 +273,7 @@
   <entry>
     <title>Java-web</title>
     <url>/2025/05/24/javaweb/</url>
-    <content><![CDATA[<p>nginx打包部署</p>
-<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment">#vue项目目录下</span></span><br><span class="line">npm run build</span><br></pre></td></tr></table></figure>
+    <content><![CDATA[<h1 id="nginx打包部署"><a href="#nginx打包部署" class="headerlink" title="nginx打包部署"></a>nginx打包部署</h1><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment">#vue项目目录下</span></span><br><span class="line">npm run build</span><br></pre></td></tr></table></figure>
 
 <p>打包好后会有一个dist文件夹</p>
 <p>部署：将dist复制到nginx的&#x2F;html中,启动nginx.exe 占用80端口（默认）</p>

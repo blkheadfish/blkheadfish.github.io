@@ -1,546 +1,165 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width">
-<meta name="theme-color" content="#222" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#222" media="(prefers-color-scheme: dark)"><meta name="generator" content="Hexo 7.3.0">
-
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
-  <link rel="mask-icon" href="/images/logo.svg" color="#222">
-
-<link rel="stylesheet" href="/css/main.css">
-
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&family=Cascadia+Code:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap&subset=latin,latin-ext">
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha256-dABdfBfUoC8vJUBOwGVdm8L9qlMWaHTIfXt+7GnZCIo=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous" defer></script>
-
-<script class="next-config" data-name="main" type="application/json">{"hostname":"example.com","root":"/","images":"/images","scheme":"Pisces","darkmode":true,"version":"8.23.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"codeblock":{"highlight_theme":"github-dark-dimmed","theme":{"light":"github-dark-dimmed","dark":"github-dark-dimmed"},"prism":{"light":"prism","dark":"prism-dark"},"copy_button":{"enable":true,"style":"mac"},"fold":{"enable":false,"height":500},"language":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"duration":200,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"},"path":"/search.xml","localsearch":{"enable":true,"top_n_per_article":1,"unescape":false,"preload":false}}</script><script src="/js/config.js" defer></script>
-
-    <meta name="description" content="nginx打包部署12#vue项目目录下npm run build  打包好后会有一个dist文件夹 部署：将dist复制到nginx的&#x2F;html中,启动nginx.exe 占用80端口（默认）   若端口被占用,在nginx.conf里更改 Maven      依赖配置 1234567&lt;dependencies&gt;        &lt;dependency&gt;">
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Java-web | wwwtty's Blogs</title><meta name="author" content="KK-L4n"><meta name="copyright" content="KK-L4n"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="nginx打包部署12#vue项目目录下npm run build  打包好后会有一个dist文件夹 部署：将dist复制到nginx的&#x2F;html中,启动nginx.exe 占用80端口（默认）   若端口被占用,在nginx.conf里更改 Maven      依赖配置 1234567&lt;dependencies&gt;        &lt;dependency&gt;">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Java-web">
 <meta property="og:url" content="http://example.com/2025/05/24/javaweb/index.html">
 <meta property="og:site_name" content="wwwtty&#39;s Blogs">
 <meta property="og:description" content="nginx打包部署12#vue项目目录下npm run build  打包好后会有一个dist文件夹 部署：将dist复制到nginx的&#x2F;html中,启动nginx.exe 占用80端口（默认）   若端口被占用,在nginx.conf里更改 Maven      依赖配置 1234567&lt;dependencies&gt;        &lt;dependency&gt;">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416204044806.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416204440011.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241120164940486.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241120165923695.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241120173152507.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241120174537451.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124202223071.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124202556434.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124202749916.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124203647719.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124203856449.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124204124508.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124205452618.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124211735777.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124211752639.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124211957736.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124212032323.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417203457434.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124214239548.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241124214652524.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416205936107.png">
-<meta property="og:image" content="c:\Users\27251\AppData\Roaming\Typora\typora-user-images\image-20250416210249296.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416210302032.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125164413610.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125165152198.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125165931263.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125170028877.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125165719305.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125170308311.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125170408069.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125170527857.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125170725201.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125170957970.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125171113513.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416211501889.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125174320885.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416212251052.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125173307496.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416212750472.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416212848621.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416213051842.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416213101326.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416213644225.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241125174015658.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416213330507.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416214125055.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204160223484.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204160805640.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204161524017.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204161631646.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204165153743.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416215444075.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204165500368.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204165558132.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416215756230.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416215819660.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416215852456.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204170401173.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416220501221.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416220602362.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416220807637.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417190259676.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417190352654.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20241204171709972.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417190905367.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417191007007.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417191130946.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417191330869.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417191437056.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416214712902.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417191956083.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417192127800.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417192219602.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417192522019.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417192553966.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417193302287.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417193712205.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417193742315.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417193843243.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417194252409.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417194953911.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417194516998.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417195009225.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417195216812.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417195556231.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417195836541.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417200126906.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417201221679.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417201254954.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417201350422.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417201534271.png">
-<meta property="og:image" content="c:/Users/27251/Desktop/%E7%AC%94%E8%AE%B0/javaweb/image-20250417201653548.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417202949112.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417203015137.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417203041487.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417204553667.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417204611577.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417212515559.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417213927717.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417210400405.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417210427254.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417210517928.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417214158607.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417214439110.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417214923497.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417215752235.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417220049558.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417220320616.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417220343493.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250417220457909.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418201847743.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418203528345.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418203737224.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418204430796.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418204407308.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418204546486.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418204842261.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418205159062.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418205005662.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418211728937.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418211743623.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418211703044.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418211232732.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418211916896.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418211907939.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418212004613.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418211955691.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250524173718167.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418213624926.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418213948765.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420162905928.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420163058104.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420163042923.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418214309975.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250418214350129.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420163551135.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420170435640.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420201158998.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420201430768.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420201500926.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420201524960.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420201822363.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420202059036.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420202159898.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420202340362.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420202552672.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420202708569.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420202838234.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420202924564.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420203009321.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420203204017.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420203059719.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420203123699.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420203258391.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420204600465.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420205002180.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420204922741.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420205145225.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420205336460.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420205419808.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420210030897.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420210155253.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250420210230204.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426152414630.png">
-<meta property="og:image" content="c:/Users/27251/Desktop/%E7%AC%94%E8%AE%B0/javaweb/image-20250426152241559.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426151816452.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426151830288.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426152754662.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426153102976.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426153355879.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426154316266.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426155110184.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426155301757.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426161006342.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426161909725.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426162430561.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426162436087.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426164017496.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426164121784.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426164220088.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426165935370.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426165951149.png">
-<meta property="og:image" content="c:/Users/27251/Desktop/%E7%AC%94%E8%AE%B0/javaweb/image-20250426171629304.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426172027177.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250426172059490.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428203330256.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428203708238.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428204102085.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428204545697.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428204919955.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428210744924.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428211702486.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428212313281.png">
-<meta property="og:image" content="c:/Users/27251/AppData/Roaming/Typora/typora-user-images/image-20250428212633326.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428213048653.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428215649758.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250428215812928.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250429211401588.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250501194904854.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250501200003215.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250501200305519.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250501200336571.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250501200425157.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250501200541756.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502104701029.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502104743935.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502110941701.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502110956067.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502111138681.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502111156255.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502112504837.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502113702239.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502113924420.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502114723744.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502114642751.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502114646465.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502115239802.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502115559884.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502120724193.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502120905590.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502120921945.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502121354174.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250502121723903.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513210042683.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513210239794.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513210246107.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513210255167.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513210324909.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513210538282.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513210839682.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513211738018.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513215109589.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250513215305299.png">
-<meta property="og:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250524174535971.png">
+<meta property="og:image" content="http://example.com/img/avatar.jpg">
 <meta property="article:published_time" content="2025-05-23T16:00:00.000Z">
 <meta property="article:modified_time" content="2025-05-25T07:57:17.565Z">
-<meta property="article:author" content="wwwtty">
+<meta property="article:author" content="KK-L4n">
 <meta property="article:tag" content="JavaWeb">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/image-20250416204044806.png">
+<meta name="twitter:image" content="http://example.com/img/avatar.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Java-web",
+  "url": "http://example.com/2025/05/24/javaweb/",
+  "image": "http://example.com/img/avatar.jpg",
+  "datePublished": "2025-05-23T16:00:00.000Z",
+  "dateModified": "2025-05-25T07:57:17.565Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "KK-L4n",
+      "url": "http://example.com/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="http://example.com/2025/05/24/javaweb/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
 
-
-<link rel="canonical" href="http://example.com/2025/05/24/javaweb/">
-
-
-<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"http://example.com/2025/05/24/javaweb/","path":"2025/05/24/javaweb/","title":"Java-web"}</script>
-
-<script class="next-config" data-name="calendar" type="application/json">""</script>
-<title>Java-web | wwwtty's Blogs</title>
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
   
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
 
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
 
-
-
-
-
-
-
-  
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous" defer></script>
-<script src="/js/utils.js" defer></script><script src="/js/motion.js" defer></script><script src="/js/sidebar.js" defer></script><script src="/js/next-boot.js" defer></script>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/hexo-generator-searchdb/1.4.1/search.js" integrity="sha256-1kfA5uHPf65M5cphT2dvymhkuyHPQp5A53EGZOnOLmc=" crossorigin="anonymous" defer></script>
-<script src="/js/third-party/search/local-search.js" defer></script>
-
-
-
-
-
-  <script src="/js/third-party/pace.js" defer></script>
-
-
-  
-  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
-
-
-
-
-
-  <noscript>
-    <link rel="stylesheet" href="/css/noscript.css">
-  </noscript>
-</head>
-
-<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
-  <div class="headband"></div>
-
-  <main class="main">
-    <div class="column">
-      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
-  <div class="site-nav-toggle">
-    <div class="toggle" aria-label="切换导航栏" role="button">
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-        <span class="toggle-line"></span>
-    </div>
-  </div>
-
-  <div class="site-meta">
-
-    <a href="/" class="brand" rel="start">
-      <i class="logo-line"></i>
-      <p class="site-title">wwwtty's Blogs</p>
-      <i class="logo-line"></i>
-    </a>
-      <p class="site-subtitle" itemprop="description">🍃有爱就要有底气</p>
-  </div>
-
-  <div class="site-nav-right">
-    <div class="toggle popup-trigger" aria-label="搜索" role="button">
-        <i class="fa fa-search fa-fw fa-lg"></i>
-    </div>
-  </div>
-</div>
-
-
-
-<nav class="site-nav">
-  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/home" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-categories"><a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
-      <li class="menu-item menu-item-search">
-        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
-        </a>
-      </li>
-  </ul>
-</nav>
-
-
-
-  <div class="search-pop-overlay">
-    <div class="popup search-popup">
-      <div class="search-header">
-        <span class="search-icon">
-          <i class="fa fa-search"></i>
-        </span>
-        <div class="search-input-container">
-          <input autocomplete="off" autocapitalize="off" maxlength="80"
-                placeholder="搜索..." spellcheck="false"
-                type="search" class="search-input">
-        </div>
-        <span class="popup-btn-close" role="button">
-          <i class="fa fa-times-circle"></i>
-        </span>
-      </div>
-      <div class="search-result-container">
-        <div class="search-result-icon">
-          <i class="fa fa-spinner fa-pulse fa-5x"></i>
-        </div>
-      </div>
-    </div>
-  </div>
-
-</header>
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
         
-  
-  <aside class="sidebar">
-
-    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
-      <ul class="sidebar-nav">
-        <li class="sidebar-nav-toc">
-          文章目录
-        </li>
-        <li class="sidebar-nav-overview">
-          站点概览
-        </li>
-      </ul>
-
-      <div class="sidebar-panel-container">
-        <!--noindex-->
-        <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#nginx%E6%89%93%E5%8C%85%E9%83%A8%E7%BD%B2"><span class="nav-number">1.</span> <span class="nav-text">nginx打包部署</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Maven"><span class="nav-number">2.</span> <span class="nav-text">Maven</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E9%85%8D%E7%BD%AE"><span class="nav-number">2.1.</span> <span class="nav-text">依赖配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E4%BC%A0%E9%80%92"><span class="nav-number">2.2.</span> <span class="nav-text">依赖传递</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%8E%92%E9%99%A4%E4%BE%9D%E8%B5%96"><span class="nav-number">2.2.1.</span> <span class="nav-text">排除依赖</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%BE%9D%E8%B5%96%E8%8C%83%E5%9B%B4"><span class="nav-number">2.3.</span> <span class="nav-text">依赖范围</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="nav-number">2.4.</span> <span class="nav-text">生命周期</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#SpringBoot"><span class="nav-number">3.</span> <span class="nav-text">SpringBoot</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#RestController"><span class="nav-number">3.0.1.</span> <span class="nav-text">@RestController</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#RequestMapping-%E6%B3%A8%E8%A7%A3"><span class="nav-number">3.0.2.</span> <span class="nav-text">@RequestMapping()注解</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#HTTP%E5%8D%8F%E8%AE%AE"><span class="nav-number">4.</span> <span class="nav-text">HTTP协议</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F"><span class="nav-number">4.1.</span> <span class="nav-text">请求数据格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%B7%E6%B1%82%E5%A4%B4%EF%BC%9A"><span class="nav-number">4.1.1.</span> <span class="nav-text">常见请求头：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F"><span class="nav-number">4.2.</span> <span class="nav-text">响应数据格式</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%8A%B6%E6%80%81%E7%A0%81"><span class="nav-number">4.2.1.</span> <span class="nav-text">状态码</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E5%93%8D%E5%BA%94%E5%A4%B4"><span class="nav-number">4.2.2.</span> <span class="nav-text">常见响应头</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Web%E6%9C%8D%E5%8A%A1%E5%99%A8-Tomcat"><span class="nav-number">5.</span> <span class="nav-text">Web服务器-Tomcat</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="nav-number">5.1.</span> <span class="nav-text">基本使用</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AB%AF%E5%8F%A3%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3%EF%BC%9A"><span class="nav-number">5.1.1.</span> <span class="nav-text">端口冲突解决：</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90"><span class="nav-number">5.2.</span> <span class="nav-text">程序解析</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94"><span class="nav-number">6.</span> <span class="nav-text">请求响应</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%AF%B7%E6%B1%82"><span class="nav-number">6.1.</span> <span class="nav-text">请求</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#postman%E5%B7%A5%E5%85%B7"><span class="nav-number">6.1.1.</span> <span class="nav-text">postman工具</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%AE%80%E5%8D%95%E5%8F%82%E6%95%B0"><span class="nav-number">6.1.2.</span> <span class="nav-text">简单参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E4%BD%93%E5%8F%82%E6%95%B0"><span class="nav-number">6.1.3.</span> <span class="nav-text">实体参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E7%BB%84%E5%8F%82%E6%95%B0"><span class="nav-number">6.1.4.</span> <span class="nav-text">数组参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%9B%86%E5%90%88%E5%8F%82%E6%95%B0"><span class="nav-number">6.1.5.</span> <span class="nav-text">集合参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%97%A5%E6%9C%9F%E5%8F%82%E6%95%B0"><span class="nav-number">6.1.6.</span> <span class="nav-text">日期参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#json%E5%8F%82%E6%95%B0"><span class="nav-number">6.1.7.</span> <span class="nav-text">json参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0"><span class="nav-number">6.1.8.</span> <span class="nav-text">路径参数</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8D%95%E4%B8%AA%E8%B7%AF%E5%BE%84"><span class="nav-number">6.1.8.1.</span> <span class="nav-text">单个路径</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E4%B8%AA%E8%B7%AF%E5%BE%84"><span class="nav-number">6.1.8.2.</span> <span class="nav-text">多个路径</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%93%8D%E5%BA%94"><span class="nav-number">6.2.</span> <span class="nav-text">响应</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#ResponseBody%E6%B3%A8%E8%A7%A3"><span class="nav-number">6.2.1.</span> <span class="nav-text">@ResponseBody注解</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="nav-number">6.2.1.1.</span> <span class="nav-text">响应字符串</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E5%AF%B9%E8%B1%A1"><span class="nav-number">6.2.1.2.</span> <span class="nav-text">响应对象</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E9%9B%86%E5%90%88"><span class="nav-number">6.2.1.3.</span> <span class="nav-text">响应集合</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%9F%E4%B8%80%E5%93%8D%E5%BA%94%E7%BB%93%E6%9E%9C"><span class="nav-number">6.2.1.4.</span> <span class="nav-text">统一响应结果</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E5%AD%97%E7%AC%A6%E4%B8%B2-1"><span class="nav-number">6.2.1.4.1.</span> <span class="nav-text">响应字符串</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E5%AF%B9%E8%B1%A1-1"><span class="nav-number">6.2.1.4.2.</span> <span class="nav-text">响应对象</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%93%8D%E5%BA%94%E9%9B%86%E5%90%88-1"><span class="nav-number">6.2.1.4.3.</span> <span class="nav-text">响应集合</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B"><span class="nav-number">6.3.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#pom-xml%E4%B8%AD%E6%B7%BB%E5%8A%A0%E5%9D%90%E6%A0%87"><span class="nav-number">6.3.1.</span> <span class="nav-text">pom.xml中添加坐标</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B7%A5%E5%85%B7%E7%B1%BBXmlParserUtils"><span class="nav-number">6.3.2.</span> <span class="nav-text">工具类XmlParserUtils</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Emp%E7%B1%BB"><span class="nav-number">6.3.3.</span> <span class="nav-text">Emp类</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E8%AF%B7%E6%B1%82%E7%B1%BBEmpController"><span class="nav-number">6.3.4.</span> <span class="nav-text">处理请求类EmpController</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%88%86%E5%B1%82%E8%A7%A3%E8%80%A6"><span class="nav-number">7.</span> <span class="nav-text">分层解耦</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%89%E5%B1%82%E6%9E%B6%E6%9E%84"><span class="nav-number">7.1.</span> <span class="nav-text">三层架构</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Dao%E5%B1%82-%E6%95%B0%E6%8D%AE%E8%AE%BF%E9%97%AE"><span class="nav-number">7.1.1.</span> <span class="nav-text">Dao层-数据访问</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Service%E5%B1%82-%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%E5%A4%84%E7%90%86"><span class="nav-number">7.1.2.</span> <span class="nav-text">Service层-业务逻辑处理</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Controller%E5%B1%82-%E6%8E%A5%E6%94%B6%E8%AF%B7%E6%B1%82-%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE"><span class="nav-number">7.1.3.</span> <span class="nav-text">Controller层-接收请求,响应数据</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%86%E5%B1%82%E8%A7%A3%E8%80%A6-1"><span class="nav-number">7.2.</span> <span class="nav-text">分层解耦</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%AD%A5%E9%AA%A4"><span class="nav-number">7.2.1.</span> <span class="nav-text">步骤</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Component%E6%B3%A8%E8%A7%A3"><span class="nav-number">7.2.2.</span> <span class="nav-text">@Component注解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Autowired%E6%B3%A8%E8%A7%A3"><span class="nav-number">7.2.3.</span> <span class="nav-text">@Autowired注解</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#IOC%E8%AF%A6%E8%A7%A3"><span class="nav-number">7.3.</span> <span class="nav-text">IOC详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Bean%E7%9A%84%E5%A3%B0%E6%98%8E"><span class="nav-number">7.3.1.</span> <span class="nav-text">Bean的声明</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="nav-number">7.3.2.</span> <span class="nav-text">注意事项</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Bean%E7%BB%84%E4%BB%B6%E6%89%AB%E6%8F%8F"><span class="nav-number">7.3.3.</span> <span class="nav-text">Bean组件扫描</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#DI%E8%AF%A6%E8%A7%A3"><span class="nav-number">7.4.</span> <span class="nav-text">DI详解</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Primary"><span class="nav-number">7.4.1.</span> <span class="nav-text">@Primary</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Qualifier"><span class="nav-number">7.4.2.</span> <span class="nav-text">@Qualifier</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Resource"><span class="nav-number">7.4.3.</span> <span class="nav-text">@Resource</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#Mybatis"><span class="nav-number">8.</span> <span class="nav-text">Mybatis</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="nav-number">8.1.</span> <span class="nav-text">准备工作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#springboot%E5%B7%A5%E7%A8%8B"><span class="nav-number">8.1.1.</span> <span class="nav-text">springboot工程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="nav-number">8.1.2.</span> <span class="nav-text">配置文件</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mapper%E6%B3%A8%E8%A7%A3"><span class="nav-number">8.1.3.</span> <span class="nav-text">@Mapper注解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BF%9B%E8%A1%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95"><span class="nav-number">8.1.4.</span> <span class="nav-text">进行单元测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%85%8D%E7%BD%AEsql%E6%8F%90%E7%A4%BA"><span class="nav-number">8.1.5.</span> <span class="nav-text">配置sql提示</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#JDBC"><span class="nav-number">8.2.</span> <span class="nav-text">JDBC</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%9E%E6%8E%A5%E6%B1%A0"><span class="nav-number">8.3.</span> <span class="nav-text">数据库连接池</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%88%87%E6%8D%A2%E8%BF%9E%E6%8E%A5%E6%B1%A0"><span class="nav-number">8.3.1.</span> <span class="nav-text">切换连接池</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#lombok"><span class="nav-number">8.4.</span> <span class="nav-text">lombok</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%95%E5%85%A5%E4%BE%9D%E8%B5%96"><span class="nav-number">8.4.1.</span> <span class="nav-text">引入依赖</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Data"><span class="nav-number">8.4.2.</span> <span class="nav-text">@Data</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Mybatis%E5%9F%BA%E7%A1%80%E6%93%8D%E4%BD%9C"><span class="nav-number">8.5.</span> <span class="nav-text">Mybatis基础操作</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%88%A0%E9%99%A4%E6%93%8D%E4%BD%9C"><span class="nav-number">8.6.</span> <span class="nav-text">删除操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Delete"><span class="nav-number">8.6.1.</span> <span class="nav-text">@Delete</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%BC%A0%E9%80%92%E5%8F%82%E6%95%B0"><span class="nav-number">8.6.2.</span> <span class="nav-text">传递参数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95"><span class="nav-number">8.6.3.</span> <span class="nav-text">测试</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Mybatis%E6%97%A5%E5%BF%97%E8%BE%93%E5%87%BA"><span class="nav-number">8.6.4.</span> <span class="nav-text">Mybatis日志输出</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%A2%84%E7%BC%96%E8%AF%91SQL%E4%BC%98%E5%8A%BF"><span class="nav-number">8.6.5.</span> <span class="nav-text">预编译SQL优势</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8F%82%E6%95%B0%E5%8D%A0%E4%BD%8D%E7%AC%A6"><span class="nav-number">8.6.6.</span> <span class="nav-text">参数占位符</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%96%B0%E5%A2%9E%E6%93%8D%E4%BD%9C"><span class="nav-number">8.7.</span> <span class="nav-text">新增操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Insert"><span class="nav-number">8.7.1.</span> <span class="nav-text">@Insert</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E9%94%AE%E8%BF%94%E5%9B%9E"><span class="nav-number">8.7.2.</span> <span class="nav-text">主键返回</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Options"><span class="nav-number">8.7.2.1.</span> <span class="nav-text">@Options</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9B%B4%E6%96%B0%E6%93%8D%E4%BD%9C"><span class="nav-number">8.8.</span> <span class="nav-text">更新操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#Update"><span class="nav-number">8.8.1.</span> <span class="nav-text">@Update</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9F%A5%E8%AF%A2%E6%93%8D%E4%BD%9C"><span class="nav-number">8.9.</span> <span class="nav-text">查询操作</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B0%E6%8D%AE%E5%B0%81%E8%A3%85"><span class="nav-number">8.9.1.</span> <span class="nav-text">数据封装</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#Results%EF%BC%8C-Result"><span class="nav-number">8.9.2.</span> <span class="nav-text">@Results，@Result</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%90%AFmybatis%E9%A9%BC%E5%B3%B0%E5%91%BD%E5%90%8D%E8%87%AA%E5%8A%A8%E6%98%A0%E5%B0%84%E5%BC%80%E5%85%B3-a-column-aColumn"><span class="nav-number">8.9.3.</span> <span class="nav-text">开启mybatis驼峰命名自动映射开关 a_column -&gt; aColumn</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%9D%A1%E4%BB%B6%E6%9F%A5%E8%AF%A2"><span class="nav-number">8.10.</span> <span class="nav-text">条件查询</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#concat"><span class="nav-number">8.10.1.</span> <span class="nav-text">concat()</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#XML%E6%98%A0%E5%B0%84%E6%96%87%E4%BB%B6"><span class="nav-number">8.11.</span> <span class="nav-text">XML映射文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8A%A8%E6%80%81sql"><span class="nav-number">8.12.</span> <span class="nav-text">动态sql</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#if"><span class="nav-number">8.12.1.</span> <span class="nav-text">&lt; if &gt;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#where"><span class="nav-number">8.12.2.</span> <span class="nav-text">&lt; where &gt;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#set"><span class="nav-number">8.12.3.</span> <span class="nav-text">&lt; set &gt;</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B-%E5%8A%A8%E6%80%81%E6%9B%B4%E6%96%B0"><span class="nav-number">8.12.3.1.</span> <span class="nav-text">案例:动态更新</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#foreach"><span class="nav-number">8.12.4.</span> <span class="nav-text">&lt; foreach &gt;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#sql"><span class="nav-number">8.12.5.</span> <span class="nav-text">&lt; sql &gt;</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#include"><span class="nav-number">8.12.6.</span> <span class="nav-text">&lt; include &gt;</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A1%88%E4%BE%8B-1"><span class="nav-number">8.13.</span> <span class="nav-text">案例</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%8F%91%E8%A7%84%E8%8C%83"><span class="nav-number">8.13.1.</span> <span class="nav-text">开发规范</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#Restful"><span class="nav-number">8.13.1.1.</span> <span class="nav-text">Restful</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%BB%9F%E4%B8%80%E5%93%8D%E5%BA%94%E7%BB%93%E6%9E%9C-1"><span class="nav-number">8.13.1.2.</span> <span class="nav-text">统一响应结果</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B"><span class="nav-number">8.13.2.</span> <span class="nav-text">开发流程</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86"><span class="nav-number">8.13.3.</span> <span class="nav-text">部门管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86-%E6%9F%A5%E8%AF%A2"><span class="nav-number">8.13.3.1.</span> <span class="nav-text">部门管理-查询</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3%EF%BC%9A"><span class="nav-number">8.13.3.1.1.</span> <span class="nav-text">接口文档：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#postman%E6%B5%8B%E8%AF%95%EF%BC%9A"><span class="nav-number">8.13.3.1.2.</span> <span class="nav-text">postman测试：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%97%A5%E5%BF%97%E8%BE%93%E5%87%BA%EF%BC%9A"><span class="nav-number">8.13.3.1.3.</span> <span class="nav-text">日志输出：</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8C%87%E5%AE%9A%E8%AF%B7%E6%B1%82%E6%96%B9%E6%B3%95"><span class="nav-number">8.13.3.1.4.</span> <span class="nav-text">指定请求方法</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B3%A8%E5%85%A5%E4%BE%9D%E8%B5%96"><span class="nav-number">8.13.3.1.5.</span> <span class="nav-text">注入依赖</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86-%E5%88%A0%E9%99%A4"><span class="nav-number">8.13.3.2.</span> <span class="nav-text">部门管理-删除</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3"><span class="nav-number">8.13.3.2.1.</span> <span class="nav-text">接口文档</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B"><span class="nav-number">8.13.3.2.2.</span> <span class="nav-text">流程</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Controller%E5%B1%82"><span class="nav-number">8.13.3.2.3.</span> <span class="nav-text">Controller层</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Service%E5%B1%82"><span class="nav-number">8.13.3.2.4.</span> <span class="nav-text">Service层</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Mapper%E5%B1%82"><span class="nav-number">8.13.3.2.5.</span> <span class="nav-text">Mapper层</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#postman%E6%B5%8B%E8%AF%95"><span class="nav-number">8.13.3.2.6.</span> <span class="nav-text">postman测试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="nav-number">8.13.3.2.7.</span> <span class="nav-text">执行结果</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86-%E6%96%B0%E5%A2%9E"><span class="nav-number">8.13.3.3.</span> <span class="nav-text">部门管理-新增</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3-1"><span class="nav-number">8.13.3.3.1.</span> <span class="nav-text">接口文档</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Controller%E5%B1%82-1"><span class="nav-number">8.13.3.3.2.</span> <span class="nav-text">Controller层</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Service%E5%B1%82-1"><span class="nav-number">8.13.3.3.3.</span> <span class="nav-text">Service层</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#Mapper%E5%B1%82-1"><span class="nav-number">8.13.3.3.4.</span> <span class="nav-text">Mapper层</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#postman%E6%B5%8B%E8%AF%95-1"><span class="nav-number">8.13.3.3.5.</span> <span class="nav-text">postman测试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E7%BB%93%E6%9E%9C"><span class="nav-number">8.13.3.3.6.</span> <span class="nav-text">结果</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E7%AE%80%E5%8C%96RequestMapping"><span class="nav-number">8.13.3.4.</span> <span class="nav-text">简化RequestMapping</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%91%98%E5%B7%A5%E7%AE%A1%E7%90%86"><span class="nav-number">8.13.4.</span> <span class="nav-text">员工管理</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%88%86%E9%A1%B5%E6%9F%A5%E8%AF%A2"><span class="nav-number">8.13.4.1.</span> <span class="nav-text">分页查询</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%88%86%E6%9E%90"><span class="nav-number">8.13.4.1.1.</span> <span class="nav-text">分析</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3-2"><span class="nav-number">8.13.4.1.2.</span> <span class="nav-text">接口文档</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%B0%81%E8%A3%85%E5%AE%9E%E4%BD%93%E7%B1%BB"><span class="nav-number">8.13.4.1.3.</span> <span class="nav-text">封装实体类</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0"><span class="nav-number">8.13.4.1.4.</span> <span class="nav-text">实现</span></a><ol class="nav-child"><li class="nav-item nav-level-6"><a class="nav-link" href="#Mapper%E5%B1%82-2"><span class="nav-number">8.13.4.1.4.1.</span> <span class="nav-text">Mapper层</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#Service%E5%B1%82-2"><span class="nav-number">8.13.4.1.4.2.</span> <span class="nav-text">Service层</span></a></li><li class="nav-item nav-level-6"><a class="nav-link" href="#Controller%E5%B1%82-2"><span class="nav-number">8.13.4.1.4.3.</span> <span class="nav-text">Controller层</span></a></li></ol></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E6%B5%8B%E8%AF%95-1"><span class="nav-number">8.13.4.1.5.</span> <span class="nav-text">测试</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#PageHelper%E6%8F%92%E4%BB%B6"><span class="nav-number">8.13.4.1.6.</span> <span class="nav-text">PageHelper插件</span></a></li></ol></li></ol></li></ol></li></ol></li></ol></div>
-        </div>
-        <!--/noindex-->
-
-        <div class="site-overview-wrap sidebar-panel">
-          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
-    <img class="site-author-image" itemprop="image" alt="wwwtty"
-      src="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/jellycat.jpg">
-  <p class="site-author-name" itemprop="name">wwwtty</p>
-  <div class="site-description" itemprop="description"></div>
-</div>
-<div class="site-state-wrap animated">
-  <nav class="site-state">
-      <div class="site-state-item site-state-posts">
-        <a href="/archives/">
-          <span class="site-state-item-count">3</span>
-          <span class="site-state-item-name">日志</span>
-        </a>
-      </div>
-      <div class="site-state-item site-state-categories">
-          <a href="/categories/">
-        <span class="site-state-item-count">2</span>
-        <span class="site-state-item-name">分类</span></a>
-      </div>
-      <div class="site-state-item site-state-tags">
-          <a href="/tags/">
-        <span class="site-state-item-count">3</span>
-        <span class="site-state-item-name">标签</span></a>
-      </div>
-  </nav>
-</div>
-  <div class="links-of-author animated">
-      <span class="links-of-author-item">
-        <a href="https://github.com/blkheadfish" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;blkheadfish" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
-      </span>
-      <span class="links-of-author-item">
-        <a href="https://blog.csdn.net/2301_79797055?type=blog" title="CSDN → https:&#x2F;&#x2F;blog.csdn.net&#x2F;2301_79797055?type&#x3D;blog" rel="noopener me" target="_blank"><i class="csdn fa-fw"></i>CSDN</a>
-      </span>
-  </div>
-<!-- recent posts -->
-
-
-        </div>
-      </div>
-    </div>
-
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
     
-  </aside>
-
-
-    </div>
-
-    <div class="main-inner post posts-expand">
-
-
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
   
-
-
-<div class="post-block">
-  
-  
-
-  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2025/05/24/javaweb/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="https://raw.githubusercontent.com/blkheadfish/picGo/main/imgs/jellycat.jpg">
-      <meta itemprop="name" content="wwwtty">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wwwtty's Blogs">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
-      <meta itemprop="name" content="Java-web | wwwtty's Blogs">
-      <meta itemprop="description" content="">
-    </span>
-      <header class="post-header">
-        <h1 class="post-title" itemprop="name headline">
-          Java-web
-        </h1>
-
-        <div class="post-meta-container">
-          <div class="post-meta">
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar"></i>
-      </span>
-      <span class="post-meta-item-text">发表于</span>
-
-      <time title="创建时间：2025-05-24 00:00:00" itemprop="dateCreated datePublished" datetime="2025-05-24T00:00:00+08:00">2025-05-24</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-calendar-check"></i>
-      </span>
-      <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2025-05-25 15:57:17" itemprop="dateModified" datetime="2025-05-25T15:57:17+08:00">2025-05-25</time>
-    </span>
-    <span class="post-meta-item">
-      <span class="post-meta-item-icon">
-        <i class="far fa-folder"></i>
-      </span>
-      <span class="post-meta-item-text">分类于</span>
-        <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-          <a href="/categories/JavaWeb/" itemprop="url" rel="index"><span itemprop="name">JavaWeb</span></a>
-        </span>
-    </span>
-
-  
-    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
-      <span class="post-meta-item-icon">
-        <i class="far fa-eye"></i>
-      </span>
-      <span class="post-meta-item-text">阅读次数：</span>
-      <span id="busuanzi_value_page_pv"></span>
-    </span>
-    <span class="post-meta-break"></span>
-    <span class="post-meta-item" title="本文字数">
-      <span class="post-meta-item-icon">
-        <i class="far fa-file-word"></i>
-      </span>
-      <span class="post-meta-item-text">本文字数：</span>
-      <span>35k</span>
-    </span>
-    <span class="post-meta-item" title="阅读时长">
-      <span class="post-meta-item-icon">
-        <i class="far fa-clock"></i>
-      </span>
-      <span class="post-meta-item-text">阅读时长 &asymp;</span>
-      <span>32 分钟</span>
-    </span>
-</div>
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody"><h1 id="nginx打包部署"><a href="#nginx打包部署" class="headerlink" title="nginx打包部署"></a>nginx打包部署</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#vue项目目录下</span></span><br><span class="line">npm run build</span><br></pre></td></tr></table></figure>
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Java-web',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 7.3.0"></head><body><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> Blogs</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/index_img.jpg);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">wwwtty's Blogs</span></a><a class="nav-page-title" href="/"><span class="site-name">Java-web</span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 主页</span></a></div><div class="menus_item"><span class="site-page group"><i class="fa-fw fa fa-graduation-cap"></i><span> Blogs</span><i class="fas fa-chevron-down"></i></span><ul class="menus_item_child"><li><a class="site-page child" href="/categories/"><i class="fa-fw fa fa-archive"></i><span> 分类</span></a></li><li><a class="site-page child" href="/tags/"><i class="fa-fw fa fa-tags"></i><span> 标签</span></a></li><li><a class="site-page child" href="/archives/"><i class="fa-fw fa fa-folder-open"></i><span> 归档</span></a></li></ul></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> 关于</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Java-web</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-05-23T16:00:00.000Z" title="发表于 2025-05-24 00:00:00">2025-05-24</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-05-25T07:57:17.565Z" title="更新于 2025-05-25 15:57:17">2025-05-25</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/JavaWeb/">JavaWeb</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="nginx打包部署"><a href="#nginx打包部署" class="headerlink" title="nginx打包部署"></a>nginx打包部署</h1><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#vue项目目录下</span></span><br><span class="line">npm run build</span><br></pre></td></tr></table></figure>
 
 <p>打包好后会有一个dist文件夹</p>
 <p>部署：将dist复制到nginx的&#x2F;html中,启动nginx.exe 占用80端口（默认）</p>
@@ -1116,112 +735,4 @@
 <p>EmpServer的实现类</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> PageBean <span class="title function_">page</span><span class="params">(Integer page, Integer pageSize)</span> &#123;</span><br><span class="line">    <span class="comment">//设置分页参数</span></span><br><span class="line">    PageHelper.startPage(page,pageSize);</span><br><span class="line"></span><br><span class="line">    <span class="comment">//执行查询</span></span><br><span class="line">    List&lt;Emp&gt; empList = empMapper.list();</span><br><span class="line">    Page&lt;Emp&gt; page1 = (Page&lt;Emp&gt;)empList;</span><br><span class="line"></span><br><span class="line">    <span class="comment">//封装bean对象</span></span><br><span class="line">    <span class="type">PageBean</span> <span class="variable">pageBean</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">PageBean</span>(page1.getTotal(),page1.getResult());</span><br><span class="line">    <span class="keyword">return</span> pageBean;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 
-
-    </div>
-
-    
-    
-    
-
-    <footer class="post-footer">
-          <div class="post-tags">
-              <a href="/tags/JavaWeb/" rel="tag"># JavaWeb</a>
-          </div>
-
-        
-
-          <div class="post-nav">
-            <div class="post-nav-item">
-                <a href="/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/" rel="prev" title="搭建自己的GitHub-page">
-                  <i class="fa fa-angle-left"></i> 搭建自己的GitHub-page
-                </a>
-            </div>
-            <div class="post-nav-item">
-            </div>
-          </div>
-    </footer>
-  </article>
-</div>
-
-
-
-
-
-
-</div>
-  </main>
-
-  <footer class="footer">
-    <div class="footer-inner">
-
-  <div class="copyright">
-    &copy; 
-    <span itemprop="copyrightYear">2025</span>
-    <span class="with-love">
-      <i class="fa fa-heart"></i>
-    </span>
-    <span class="author" itemprop="copyrightHolder">wwwtty</span>
-  </div>
-<div class="wordcount">
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-chart-line"></i>
-    </span>
-      <span>站点总字数：</span>
-    <span title="站点总字数">41k</span>
-  </span>
-  <span class="post-meta-item">
-    <span class="post-meta-item-icon">
-      <i class="fa fa-coffee"></i>
-    </span>
-      <span>站点阅读时长 &asymp;</span>
-    <span title="站点阅读时长">38 分钟</span>
-  </span>
-</div>
-<div class="busuanzi-count">
-    <span class="post-meta-item" id="busuanzi_container_site_uv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-user"></i>
-      </span>
-      <span class="site-uv" title="总访客量">
-        <span id="busuanzi_value_site_uv"></span>
-      </span>
-    </span>
-    <span class="post-meta-item" id="busuanzi_container_site_pv">
-      <span class="post-meta-item-icon">
-        <i class="fa fa-eye"></i>
-      </span>
-      <span class="site-pv" title="总访问量">
-        <span id="busuanzi_value_site_pv"></span>
-      </span>
-    </span>
-</div>
-
-<!--
-  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
-  </div> --><script color="0,0,255" opacity="0.5" zIndex="-1" count="99" src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1/dist/canvas-nest.js"></script>
-
-    </div>
-  </footer>
-
-  
-  <div class="toggle sidebar-toggle" role="button">
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-    <span class="toggle-line"></span>
-  </div>
-  <div class="sidebar-dimmer"></div>
-  <div class="back-to-top" role="button" aria-label="返回顶部">
-    <i class="fa fa-arrow-up fa-lg"></i>
-    <span>0%</span>
-  </div>
-
-<noscript>
-  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
-</noscript>
-
-</body>
-</html>
-<!-- 页面点击小红心 -->
-<script type="text/javascript" src="/js/love.js"></script>
-
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="http://example.com">KK-L4n</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="http://example.com/2025/05/24/javaweb/">http://example.com/2025/05/24/javaweb/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="http://example.com" target="_blank">wwwtty's Blogs</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/JavaWeb/">JavaWeb</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/" title="搭建自己的GitHub-page"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">搭建自己的GitHub-page</div></div><div class="info-2"><div class="info-item-1">搭建自己的github-Page生成SSH Key1ssh-keygen -t rsa -C &quot;github绑定邮箱&quot;   验证1ssh -T git@github.com   新建自己的仓库         下载git下载链接:https://git-scm.com/downloads/win 参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755  搭建本地博客创建博客目录 安装hexo1npm install -g hexo/cli   12#创建一个新的hexo项目hexo init myblogs   此时的目录结构   12cd myblogsnpm install  此时项目结构  运行hexo项目 1hexo server   部署到github获取个人token       打开_config.yml  编辑_config.yml 当前博客目录安装git插件1npm install hexo-deployer-git --save  最后123456hexo...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="/img/avatar.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">KK-L4n</div><div class="author-info-description">🍃有爱就要有底气</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">3</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">3</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/blkheadfish" target="_blank" title="Github"><i class="fab fa-github" style="color: #24292e;"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">This is my Blog</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#nginx%E6%89%93%E5%8C%85%E9%83%A8%E7%BD%B2"><span class="toc-number">1.</span> <span class="toc-text">nginx打包部署</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Maven"><span class="toc-number">2.</span> <span class="toc-text">Maven</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E9%85%8D%E7%BD%AE"><span class="toc-number">2.1.</span> <span class="toc-text">依赖配置</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E4%BC%A0%E9%80%92"><span class="toc-number">2.2.</span> <span class="toc-text">依赖传递</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8E%92%E9%99%A4%E4%BE%9D%E8%B5%96"><span class="toc-number">2.2.1.</span> <span class="toc-text">排除依赖</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E8%8C%83%E5%9B%B4"><span class="toc-number">2.3.</span> <span class="toc-text">依赖范围</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F"><span class="toc-number">2.4.</span> <span class="toc-text">生命周期</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#SpringBoot"><span class="toc-number">3.</span> <span class="toc-text">SpringBoot</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#RestController"><span class="toc-number">3.0.1.</span> <span class="toc-text">@RestController</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#RequestMapping-%E6%B3%A8%E8%A7%A3"><span class="toc-number">3.0.2.</span> <span class="toc-text">@RequestMapping()注解</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#HTTP%E5%8D%8F%E8%AE%AE"><span class="toc-number">4.</span> <span class="toc-text">HTTP协议</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%B7%E6%B1%82%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F"><span class="toc-number">4.1.</span> <span class="toc-text">请求数据格式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E8%AF%B7%E6%B1%82%E5%A4%B4%EF%BC%9A"><span class="toc-number">4.1.1.</span> <span class="toc-text">常见请求头：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE%E6%A0%BC%E5%BC%8F"><span class="toc-number">4.2.</span> <span class="toc-text">响应数据格式</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%8A%B6%E6%80%81%E7%A0%81"><span class="toc-number">4.2.1.</span> <span class="toc-text">状态码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E5%93%8D%E5%BA%94%E5%A4%B4"><span class="toc-number">4.2.2.</span> <span class="toc-text">常见响应头</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Web%E6%9C%8D%E5%8A%A1%E5%99%A8-Tomcat"><span class="toc-number">5.</span> <span class="toc-text">Web服务器-Tomcat</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="toc-number">5.1.</span> <span class="toc-text">基本使用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AB%AF%E5%8F%A3%E5%86%B2%E7%AA%81%E8%A7%A3%E5%86%B3%EF%BC%9A"><span class="toc-number">5.1.1.</span> <span class="toc-text">端口冲突解决：</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%A8%8B%E5%BA%8F%E8%A7%A3%E6%9E%90"><span class="toc-number">5.2.</span> <span class="toc-text">程序解析</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94"><span class="toc-number">6.</span> <span class="toc-text">请求响应</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%B7%E6%B1%82"><span class="toc-number">6.1.</span> <span class="toc-text">请求</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#postman%E5%B7%A5%E5%85%B7"><span class="toc-number">6.1.1.</span> <span class="toc-text">postman工具</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AE%80%E5%8D%95%E5%8F%82%E6%95%B0"><span class="toc-number">6.1.2.</span> <span class="toc-text">简单参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%9E%E4%BD%93%E5%8F%82%E6%95%B0"><span class="toc-number">6.1.3.</span> <span class="toc-text">实体参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E7%BB%84%E5%8F%82%E6%95%B0"><span class="toc-number">6.1.4.</span> <span class="toc-text">数组参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%9B%86%E5%90%88%E5%8F%82%E6%95%B0"><span class="toc-number">6.1.5.</span> <span class="toc-text">集合参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%97%A5%E6%9C%9F%E5%8F%82%E6%95%B0"><span class="toc-number">6.1.6.</span> <span class="toc-text">日期参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#json%E5%8F%82%E6%95%B0"><span class="toc-number">6.1.7.</span> <span class="toc-text">json参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0"><span class="toc-number">6.1.8.</span> <span class="toc-text">路径参数</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8D%95%E4%B8%AA%E8%B7%AF%E5%BE%84"><span class="toc-number">6.1.8.1.</span> <span class="toc-text">单个路径</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%9A%E4%B8%AA%E8%B7%AF%E5%BE%84"><span class="toc-number">6.1.8.2.</span> <span class="toc-text">多个路径</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%93%8D%E5%BA%94"><span class="toc-number">6.2.</span> <span class="toc-text">响应</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ResponseBody%E6%B3%A8%E8%A7%A3"><span class="toc-number">6.2.1.</span> <span class="toc-text">@ResponseBody注解</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E5%AD%97%E7%AC%A6%E4%B8%B2"><span class="toc-number">6.2.1.1.</span> <span class="toc-text">响应字符串</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E5%AF%B9%E8%B1%A1"><span class="toc-number">6.2.1.2.</span> <span class="toc-text">响应对象</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E9%9B%86%E5%90%88"><span class="toc-number">6.2.1.3.</span> <span class="toc-text">响应集合</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BB%9F%E4%B8%80%E5%93%8D%E5%BA%94%E7%BB%93%E6%9E%9C"><span class="toc-number">6.2.1.4.</span> <span class="toc-text">统一响应结果</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E5%AD%97%E7%AC%A6%E4%B8%B2-1"><span class="toc-number">6.2.1.4.1.</span> <span class="toc-text">响应字符串</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E5%AF%B9%E8%B1%A1-1"><span class="toc-number">6.2.1.4.2.</span> <span class="toc-text">响应对象</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%93%8D%E5%BA%94%E9%9B%86%E5%90%88-1"><span class="toc-number">6.2.1.4.3.</span> <span class="toc-text">响应集合</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A1%88%E4%BE%8B"><span class="toc-number">6.3.</span> <span class="toc-text">案例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#pom-xml%E4%B8%AD%E6%B7%BB%E5%8A%A0%E5%9D%90%E6%A0%87"><span class="toc-number">6.3.1.</span> <span class="toc-text">pom.xml中添加坐标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B7%A5%E5%85%B7%E7%B1%BBXmlParserUtils"><span class="toc-number">6.3.2.</span> <span class="toc-text">工具类XmlParserUtils</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Emp%E7%B1%BB"><span class="toc-number">6.3.3.</span> <span class="toc-text">Emp类</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%84%E7%90%86%E8%AF%B7%E6%B1%82%E7%B1%BBEmpController"><span class="toc-number">6.3.4.</span> <span class="toc-text">处理请求类EmpController</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E5%B1%82%E8%A7%A3%E8%80%A6"><span class="toc-number">7.</span> <span class="toc-text">分层解耦</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E5%B1%82%E6%9E%B6%E6%9E%84"><span class="toc-number">7.1.</span> <span class="toc-text">三层架构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Dao%E5%B1%82-%E6%95%B0%E6%8D%AE%E8%AE%BF%E9%97%AE"><span class="toc-number">7.1.1.</span> <span class="toc-text">Dao层-数据访问</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Service%E5%B1%82-%E4%B8%9A%E5%8A%A1%E9%80%BB%E8%BE%91%E5%A4%84%E7%90%86"><span class="toc-number">7.1.2.</span> <span class="toc-text">Service层-业务逻辑处理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Controller%E5%B1%82-%E6%8E%A5%E6%94%B6%E8%AF%B7%E6%B1%82-%E5%93%8D%E5%BA%94%E6%95%B0%E6%8D%AE"><span class="toc-number">7.1.3.</span> <span class="toc-text">Controller层-接收请求,响应数据</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%B1%82%E8%A7%A3%E8%80%A6-1"><span class="toc-number">7.2.</span> <span class="toc-text">分层解耦</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AD%A5%E9%AA%A4"><span class="toc-number">7.2.1.</span> <span class="toc-text">步骤</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Component%E6%B3%A8%E8%A7%A3"><span class="toc-number">7.2.2.</span> <span class="toc-text">@Component注解</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Autowired%E6%B3%A8%E8%A7%A3"><span class="toc-number">7.2.3.</span> <span class="toc-text">@Autowired注解</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#IOC%E8%AF%A6%E8%A7%A3"><span class="toc-number">7.3.</span> <span class="toc-text">IOC详解</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Bean%E7%9A%84%E5%A3%B0%E6%98%8E"><span class="toc-number">7.3.1.</span> <span class="toc-text">Bean的声明</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9"><span class="toc-number">7.3.2.</span> <span class="toc-text">注意事项</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Bean%E7%BB%84%E4%BB%B6%E6%89%AB%E6%8F%8F"><span class="toc-number">7.3.3.</span> <span class="toc-text">Bean组件扫描</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DI%E8%AF%A6%E8%A7%A3"><span class="toc-number">7.4.</span> <span class="toc-text">DI详解</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Primary"><span class="toc-number">7.4.1.</span> <span class="toc-text">@Primary</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Qualifier"><span class="toc-number">7.4.2.</span> <span class="toc-text">@Qualifier</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Resource"><span class="toc-number">7.4.3.</span> <span class="toc-text">@Resource</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Mybatis"><span class="toc-number">8.</span> <span class="toc-text">Mybatis</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="toc-number">8.1.</span> <span class="toc-text">准备工作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#springboot%E5%B7%A5%E7%A8%8B"><span class="toc-number">8.1.1.</span> <span class="toc-text">springboot工程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6"><span class="toc-number">8.1.2.</span> <span class="toc-text">配置文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Mapper%E6%B3%A8%E8%A7%A3"><span class="toc-number">8.1.3.</span> <span class="toc-text">@Mapper注解</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%BF%9B%E8%A1%8C%E5%8D%95%E5%85%83%E6%B5%8B%E8%AF%95"><span class="toc-number">8.1.4.</span> <span class="toc-text">进行单元测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEsql%E6%8F%90%E7%A4%BA"><span class="toc-number">8.1.5.</span> <span class="toc-text">配置sql提示</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JDBC"><span class="toc-number">8.2.</span> <span class="toc-text">JDBC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E8%BF%9E%E6%8E%A5%E6%B1%A0"><span class="toc-number">8.3.</span> <span class="toc-text">数据库连接池</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%87%E6%8D%A2%E8%BF%9E%E6%8E%A5%E6%B1%A0"><span class="toc-number">8.3.1.</span> <span class="toc-text">切换连接池</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#lombok"><span class="toc-number">8.4.</span> <span class="toc-text">lombok</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%95%E5%85%A5%E4%BE%9D%E8%B5%96"><span class="toc-number">8.4.1.</span> <span class="toc-text">引入依赖</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Data"><span class="toc-number">8.4.2.</span> <span class="toc-text">@Data</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Mybatis%E5%9F%BA%E7%A1%80%E6%93%8D%E4%BD%9C"><span class="toc-number">8.5.</span> <span class="toc-text">Mybatis基础操作</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A0%E9%99%A4%E6%93%8D%E4%BD%9C"><span class="toc-number">8.6.</span> <span class="toc-text">删除操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Delete"><span class="toc-number">8.6.1.</span> <span class="toc-text">@Delete</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%A0%E9%80%92%E5%8F%82%E6%95%B0"><span class="toc-number">8.6.2.</span> <span class="toc-text">传递参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95"><span class="toc-number">8.6.3.</span> <span class="toc-text">测试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Mybatis%E6%97%A5%E5%BF%97%E8%BE%93%E5%87%BA"><span class="toc-number">8.6.4.</span> <span class="toc-text">Mybatis日志输出</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A2%84%E7%BC%96%E8%AF%91SQL%E4%BC%98%E5%8A%BF"><span class="toc-number">8.6.5.</span> <span class="toc-text">预编译SQL优势</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8F%82%E6%95%B0%E5%8D%A0%E4%BD%8D%E7%AC%A6"><span class="toc-number">8.6.6.</span> <span class="toc-text">参数占位符</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B0%E5%A2%9E%E6%93%8D%E4%BD%9C"><span class="toc-number">8.7.</span> <span class="toc-text">新增操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Insert"><span class="toc-number">8.7.1.</span> <span class="toc-text">@Insert</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BB%E9%94%AE%E8%BF%94%E5%9B%9E"><span class="toc-number">8.7.2.</span> <span class="toc-text">主键返回</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Options"><span class="toc-number">8.7.2.1.</span> <span class="toc-text">@Options</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9B%B4%E6%96%B0%E6%93%8D%E4%BD%9C"><span class="toc-number">8.8.</span> <span class="toc-text">更新操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Update"><span class="toc-number">8.8.1.</span> <span class="toc-text">@Update</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E8%AF%A2%E6%93%8D%E4%BD%9C"><span class="toc-number">8.9.</span> <span class="toc-text">查询操作</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%B0%81%E8%A3%85"><span class="toc-number">8.9.1.</span> <span class="toc-text">数据封装</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Results%EF%BC%8C-Result"><span class="toc-number">8.9.2.</span> <span class="toc-text">@Results，@Result</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%80%E5%90%AFmybatis%E9%A9%BC%E5%B3%B0%E5%91%BD%E5%90%8D%E8%87%AA%E5%8A%A8%E6%98%A0%E5%B0%84%E5%BC%80%E5%85%B3-a-column-aColumn"><span class="toc-number">8.9.3.</span> <span class="toc-text">开启mybatis驼峰命名自动映射开关 a_column -&gt; aColumn</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9D%A1%E4%BB%B6%E6%9F%A5%E8%AF%A2"><span class="toc-number">8.10.</span> <span class="toc-text">条件查询</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#concat"><span class="toc-number">8.10.1.</span> <span class="toc-text">concat()</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#XML%E6%98%A0%E5%B0%84%E6%96%87%E4%BB%B6"><span class="toc-number">8.11.</span> <span class="toc-text">XML映射文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81sql"><span class="toc-number">8.12.</span> <span class="toc-text">动态sql</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#if"><span class="toc-number">8.12.1.</span> <span class="toc-text">&lt; if &gt;</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#where"><span class="toc-number">8.12.2.</span> <span class="toc-text">&lt; where &gt;</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#set"><span class="toc-number">8.12.3.</span> <span class="toc-text">&lt; set &gt;</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%A1%88%E4%BE%8B-%E5%8A%A8%E6%80%81%E6%9B%B4%E6%96%B0"><span class="toc-number">8.12.3.1.</span> <span class="toc-text">案例:动态更新</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#foreach"><span class="toc-number">8.12.4.</span> <span class="toc-text">&lt; foreach &gt;</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#sql"><span class="toc-number">8.12.5.</span> <span class="toc-text">&lt; sql &gt;</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#include"><span class="toc-number">8.12.6.</span> <span class="toc-text">&lt; include &gt;</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A1%88%E4%BE%8B-1"><span class="toc-number">8.13.</span> <span class="toc-text">案例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%80%E5%8F%91%E8%A7%84%E8%8C%83"><span class="toc-number">8.13.1.</span> <span class="toc-text">开发规范</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#Restful"><span class="toc-number">8.13.1.1.</span> <span class="toc-text">Restful</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%BB%9F%E4%B8%80%E5%93%8D%E5%BA%94%E7%BB%93%E6%9E%9C-1"><span class="toc-number">8.13.1.2.</span> <span class="toc-text">统一响应结果</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BC%80%E5%8F%91%E6%B5%81%E7%A8%8B"><span class="toc-number">8.13.2.</span> <span class="toc-text">开发流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86"><span class="toc-number">8.13.3.</span> <span class="toc-text">部门管理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86-%E6%9F%A5%E8%AF%A2"><span class="toc-number">8.13.3.1.</span> <span class="toc-text">部门管理-查询</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3%EF%BC%9A"><span class="toc-number">8.13.3.1.1.</span> <span class="toc-text">接口文档：</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#postman%E6%B5%8B%E8%AF%95%EF%BC%9A"><span class="toc-number">8.13.3.1.2.</span> <span class="toc-text">postman测试：</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%97%A5%E5%BF%97%E8%BE%93%E5%87%BA%EF%BC%9A"><span class="toc-number">8.13.3.1.3.</span> <span class="toc-text">日志输出：</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%8C%87%E5%AE%9A%E8%AF%B7%E6%B1%82%E6%96%B9%E6%B3%95"><span class="toc-number">8.13.3.1.4.</span> <span class="toc-text">指定请求方法</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%B3%A8%E5%85%A5%E4%BE%9D%E8%B5%96"><span class="toc-number">8.13.3.1.5.</span> <span class="toc-text">注入依赖</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86-%E5%88%A0%E9%99%A4"><span class="toc-number">8.13.3.2.</span> <span class="toc-text">部门管理-删除</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3"><span class="toc-number">8.13.3.2.1.</span> <span class="toc-text">接口文档</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%B5%81%E7%A8%8B"><span class="toc-number">8.13.3.2.2.</span> <span class="toc-text">流程</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Controller%E5%B1%82"><span class="toc-number">8.13.3.2.3.</span> <span class="toc-text">Controller层</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Service%E5%B1%82"><span class="toc-number">8.13.3.2.4.</span> <span class="toc-text">Service层</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Mapper%E5%B1%82"><span class="toc-number">8.13.3.2.5.</span> <span class="toc-text">Mapper层</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#postman%E6%B5%8B%E8%AF%95"><span class="toc-number">8.13.3.2.6.</span> <span class="toc-text">postman测试</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%89%A7%E8%A1%8C%E7%BB%93%E6%9E%9C"><span class="toc-number">8.13.3.2.7.</span> <span class="toc-text">执行结果</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E9%83%A8%E9%97%A8%E7%AE%A1%E7%90%86-%E6%96%B0%E5%A2%9E"><span class="toc-number">8.13.3.3.</span> <span class="toc-text">部门管理-新增</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3-1"><span class="toc-number">8.13.3.3.1.</span> <span class="toc-text">接口文档</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Controller%E5%B1%82-1"><span class="toc-number">8.13.3.3.2.</span> <span class="toc-text">Controller层</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Service%E5%B1%82-1"><span class="toc-number">8.13.3.3.3.</span> <span class="toc-text">Service层</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#Mapper%E5%B1%82-1"><span class="toc-number">8.13.3.3.4.</span> <span class="toc-text">Mapper层</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#postman%E6%B5%8B%E8%AF%95-1"><span class="toc-number">8.13.3.3.5.</span> <span class="toc-text">postman测试</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E7%BB%93%E6%9E%9C"><span class="toc-number">8.13.3.3.6.</span> <span class="toc-text">结果</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%AE%80%E5%8C%96RequestMapping"><span class="toc-number">8.13.3.4.</span> <span class="toc-text">简化RequestMapping</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%91%98%E5%B7%A5%E7%AE%A1%E7%90%86"><span class="toc-number">8.13.4.</span> <span class="toc-text">员工管理</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E9%A1%B5%E6%9F%A5%E8%AF%A2"><span class="toc-number">8.13.4.1.</span> <span class="toc-text">分页查询</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">8.13.4.1.1.</span> <span class="toc-text">分析</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%8E%A5%E5%8F%A3%E6%96%87%E6%A1%A3-2"><span class="toc-number">8.13.4.1.2.</span> <span class="toc-text">接口文档</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%B0%81%E8%A3%85%E5%AE%9E%E4%BD%93%E7%B1%BB"><span class="toc-number">8.13.4.1.3.</span> <span class="toc-text">封装实体类</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E5%AE%9E%E7%8E%B0"><span class="toc-number">8.13.4.1.4.</span> <span class="toc-text">实现</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#Mapper%E5%B1%82-2"><span class="toc-number">8.13.4.1.4.1.</span> <span class="toc-text">Mapper层</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#Service%E5%B1%82-2"><span class="toc-number">8.13.4.1.4.2.</span> <span class="toc-text">Service层</span></a></li><li class="toc-item toc-level-6"><a class="toc-link" href="#Controller%E5%B1%82-2"><span class="toc-number">8.13.4.1.4.3.</span> <span class="toc-text">Controller层</span></a></li></ol></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-1"><span class="toc-number">8.13.4.1.5.</span> <span class="toc-text">测试</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#PageHelper%E6%8F%92%E4%BB%B6"><span class="toc-number">8.13.4.1.6.</span> <span class="toc-text">PageHelper插件</span></a></li></ol></li></ol></li></ol></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/05/24/javaweb/" title="Java-web">Java-web</a><time datetime="2025-05-23T16:00:00.000Z" title="发表于 2025-05-24 00:00:00">2025-05-24</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/" title="搭建自己的GitHub-page">搭建自己的GitHub-page</a><time datetime="2025-05-20T16:00:00.000Z" title="发表于 2025-05-21 00:00:00">2025-05-21</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2025/05/13/docker/" title="Docker">Docker</a><time datetime="2025-05-12T16:00:00.000Z" title="发表于 2025-05-13 00:00:00">2025-05-13</time></div></div></div></div></div></div></main><footer id="footer"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2025 By KK-L4n</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.3.5</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><div class="js-pjax"></div><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

